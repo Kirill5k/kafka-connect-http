@@ -1,0 +1,13 @@
+*.class
+data
+*.pem
+.idea/
+*.iws
+*.iml
+/out/
+target
+.DS_Store
+.gradle
+.metals
+.bloop
+*.log
