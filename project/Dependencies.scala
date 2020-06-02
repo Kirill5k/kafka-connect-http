@@ -13,6 +13,10 @@ object Dependencies {
     lazy val scalaTest = "org.scalatest" %% "scalatest" % Versions.scalatest
   }
 
+  lazy val sink = Seq(
+    Libraries.connectApi
+  )
+
   lazy val test = Seq(
     Libraries.scalaTest % Test
   )

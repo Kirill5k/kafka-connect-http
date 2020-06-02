@@ -13,5 +13,6 @@ lazy val root = (project in file("."))
 lazy val sink = (project in file("modules/sink"))
   .settings(
     name := "kafka-connect-http-sink",
-    moduleName := "kafka-connect-http-sink"
+    moduleName := "kafka-connect-http-sink",
+    libraryDependencies ++= Dependencies.sink
   )
