@@ -4,11 +4,10 @@ import java.util
 
 import org.apache.kafka.common.config.{AbstractConfig, ConfigDef}
 import org.apache.kafka.common.config.ConfigDef.{Importance, Type}
-import org.apache.kafka.connect.sink.SinkTask
 
 class HttpSinkConfig(
     val props: util.Map[String, String]
-) extends AbstractConfig(HttpSinkConfig.config, props) {
+) extends AbstractConfig(HttpSinkConfig.DEF, props) {
   val httpApiUrl        = getString(HttpSinkConfig.HTTP_API_URL)
   val httpRequestMethod = getString(HttpSinkConfig.HTTP_REQUEST_METHOD)
   val batchSize         = getInt(HttpSinkConfig.BATCH_SIZE)
@@ -31,7 +30,7 @@ object HttpSinkConfig {
   val MAX_RETRIES_DOC     = "The maximum number of times to retry on errors before failing the task"
   val MAX_RETRIES_DEFAULT = 10
 
-  val config: ConfigDef = new ConfigDef()
+  val DEF: ConfigDef = new ConfigDef()
     .define(HTTP_API_URL, Type.STRING, ConfigDef.NO_DEFAULT_VALUE, Importance.HIGH, HTTP_API_URL_DOC)
     .define(HTTP_REQUEST_METHOD, Type.STRING, HTTP_REQUEST_METHOD_DEFAULT, Importance.HIGH, HTTP_REQUEST_METHOD_DOC)
     .define(MAX_RETRIES, Type.INT, MAX_RETRIES_DEFAULT, Importance.MEDIUM, MAX_RETRIES_DOC)
