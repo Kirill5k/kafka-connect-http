@@ -8,10 +8,16 @@ import org.apache.kafka.common.config.ConfigDef.{Importance, Type}
 class HttpSinkConfig(
     val props: util.Map[String, String]
 ) extends AbstractConfig(HttpSinkConfig.DEF, props) {
-  val httpApiUrl        = getString(HttpSinkConfig.HTTP_API_URL)
-  val httpRequestMethod = getString(HttpSinkConfig.HTTP_REQUEST_METHOD)
-  val batchSize         = getInt(HttpSinkConfig.BATCH_SIZE)
-  val maxRetries        = getInt(HttpSinkConfig.MAX_RETRIES)
+  val httpApiUrl: String        = getString(HttpSinkConfig.HTTP_API_URL)
+  val httpRequestMethod: String = getString(HttpSinkConfig.HTTP_REQUEST_METHOD)
+  val batchSize: Int            = getInt(HttpSinkConfig.BATCH_SIZE)
+  val maxRetries: Int           = getInt(HttpSinkConfig.MAX_RETRIES)
+
+  val avroConverterConf: Map[String, String] = Map(
+    "schema.registry.url"          -> props.get("value.converter.schema.registry.url"),
+    "enhanced.avro.schema.support" -> props.get("enhanced.avro.schema.support"),
+    "specific.avro.reader"         -> props.get("specific.avro.reader")
+  )
 }
 
 object HttpSinkConfig {
