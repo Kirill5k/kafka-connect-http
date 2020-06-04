@@ -22,8 +22,8 @@ final class HttpSinkConfig(
   val batchSuffix: String            = getString(BATCH_SUFFIX)
   val maxRetries: Int                = getInt(MAX_RETRIES)
   val retryBackoff: Long             = getLong(RETRY_BACKOFF)
-  val regexPatterns: Seq[String]     = getString(REGEX_PATTERNS).split(regexSep).filter(_.nonEmpty).toList
-  val regexReplacements: Seq[String] = getString(REGEX_REPLACEMENTS).split(regexSep).filter(_.nonEmpty).toList
+  val regexPatterns: Seq[String]     = getString(REGEX_PATTERNS).split(regexSep).toList
+  val regexReplacements: Seq[String] = getString(REGEX_REPLACEMENTS).split(regexSep).toList
 
   val avroConverterConf: Map[String, String] = Map(
     "schema.registry.url"          -> props.get("value.converter.schema.registry.url"),
@@ -98,4 +98,6 @@ object HttpSinkConfig {
     .define(REGEX_SEPARATOR, Type.STRING, REGEX_SEPARATOR_DEFAULT, Importance.MEDIUM, REGEX_SEPARATOR_DOC)
     .define(MAX_RETRIES, Type.INT, MAX_RETRIES_DEFAULT, Importance.MEDIUM, MAX_RETRIES_DOC)
     .define(RETRY_BACKOFF, Type.LONG, RETRY_BACKOFF_DEFAULT, Importance.MEDIUM, RETRY_BACKOFF_DOC)
+
+  def apply(props: util.Map[String, String]): HttpSinkConfig = new HttpSinkConfig(props)
 }

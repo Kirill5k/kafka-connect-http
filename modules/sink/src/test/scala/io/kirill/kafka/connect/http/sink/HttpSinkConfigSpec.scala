@@ -27,8 +27,8 @@ class HttpSinkConfigSpec extends AnyWordSpec with Matchers {
       config.batchSeparator must be(",")
       config.maxRetries must be(10)
       config.retryBackoff must be(3000)
-      config.regexPatterns must be(Nil)
-      config.regexReplacements must be(Nil)
+      config.regexPatterns must be(List(""))
+      config.regexReplacements must be(List(""))
     }
 
     "set correct props" in {

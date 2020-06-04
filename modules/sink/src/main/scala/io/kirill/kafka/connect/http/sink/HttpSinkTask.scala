@@ -10,19 +10,17 @@ import org.apache.kafka.connect.sink.{SinkRecord, SinkTask}
 import scala.jdk.CollectionConverters._
 
 class HttpSinkTask extends SinkTask with Logging {
-  var sinkConfig: HttpSinkConfig = _
-  var writer: HttpWriter = _
+  var writer: Option[HttpWriter] = None
 
   override def start(props: util.Map[String, String]): Unit = {
     logger.info(s"starting http sink connector task: $props")
-    sinkConfig = new HttpSinkConfig(props)
-    writer = new HttpWriter(sinkConfig)
+    writer = Some(HttpSinkConfig(props)).map(HttpWriter(_))
   }
 
   override def put(records: util.Collection[SinkRecord]): Unit = {
     logger.info(s"received ${records.size()} records")
     val recs = records.asScala.filter(r => r != null && r.value() != null).toList
-    writer.put(recs)
+    writer.foreach(_.put(recs))
   }
 
   override def stop(): Unit = {
@@ -33,5 +31,5 @@ class HttpSinkTask extends SinkTask with Logging {
     AppInfoParser.getVersion
 
   override def flush(currentOffsets: util.Map[TopicPartition, OffsetAndMetadata]): Unit =
-    writer.flush()
+    writer.foreach(_.flush())
 }
