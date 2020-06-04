@@ -9,6 +9,7 @@ object Dependencies {
 
     lazy val scalatest = "3.1.1"
     lazy val mockito = "1.14.0"
+    lazy val mockWebServer = "3.14.4"
   }
 
   object Libraries {
@@ -20,6 +21,7 @@ object Dependencies {
     lazy val scalaTest = "org.scalatest" %% "scalatest" % Versions.scalatest
     lazy val mockitoCore = "org.mockito" %% "mockito-scala" % Versions.mockito
     lazy val mockitoScalatest = "org.mockito" %% "mockito-scala-scalatest" % Versions.mockito
+    lazy val mockWebServer = "com.squareup.okhttp3" % "mockwebserver" % Versions.mockWebServer
   }
 
   lazy val sink = Seq(
@@ -32,6 +34,7 @@ object Dependencies {
   lazy val test = Seq(
     Libraries.scalaTest % Test,
     Libraries.mockitoCore % Test,
-    Libraries.mockitoScalatest % Test
+    Libraries.mockitoScalatest % Test,
+    Libraries.mockWebServer % Test
   )
 }

@@ -1,7 +1,7 @@
 package io.kirill.kafka.connect.http.sink
 
 import org.apache.kafka.connect.sink.SinkRecord
-import scalaj.http.Http
+import scalaj.http.{Http, HttpResponse}
 
 final class HttpWriter(val conf: HttpSinkConfig) {
 
@@ -29,8 +29,8 @@ final class HttpWriter(val conf: HttpSinkConfig) {
 
 object HttpWriter {
 
-  def sendRequest(conf: HttpSinkConfig, body: String): Unit = {
-    val response = Http(conf.httpApiUrl)
+  def sendRequest(conf: HttpSinkConfig, body: String): HttpResponse[String] = {
+    Http(conf.httpApiUrl)
       .postData(body)
       .method(conf.httpRequestMethod)
       .headers(conf.httpHeaders.map(_.split(":")).map(x => (x(0), x(1))))
