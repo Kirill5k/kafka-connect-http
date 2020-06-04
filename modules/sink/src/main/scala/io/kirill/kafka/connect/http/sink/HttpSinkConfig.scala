@@ -5,22 +5,25 @@ import java.util
 import org.apache.kafka.common.config.{AbstractConfig, ConfigDef}
 import org.apache.kafka.common.config.ConfigDef.{Importance, Type}
 
-class HttpSinkConfig(
+final class HttpSinkConfig(
     val props: util.Map[String, String]
 ) extends AbstractConfig(HttpSinkConfig.DEF, props) {
   import HttpSinkConfig._
 
+  private val headerSep = getString(HEADERS_SEPARATOR)
+  private val regexSep  = getString(REGEX_SEPARATOR)
+
   val httpApiUrl: String             = getString(HTTP_API_URL)
   val httpRequestMethod: String      = getString(HTTP_REQUEST_METHOD)
-  val httpHeaders: Seq[String]       = getString(HTTP_HEADERS).split(HEADERS_SEPARATOR).toList
+  val httpHeaders: Seq[String]       = getString(HTTP_HEADERS).split(headerSep).filter(_.nonEmpty).toList
   val batchSize: Int                 = getInt(BATCH_SIZE)
   val batchPrefix: String            = getString(BATCH_PREFIX)
   val batchSeparator: String         = getString(BATCH_SEPARATOR)
   val batchSuffix: String            = getString(BATCH_SUFFIX)
   val maxRetries: Int                = getInt(MAX_RETRIES)
   val retryBackoff: Long             = getLong(RETRY_BACKOFF)
-  val regexPatterns: Seq[String]     = getString(REGEX_PATTERNS).split(REGEX_SEPARATOR).toList
-  val regexReplacements: Seq[String] = getString(REGEX_REPLACEMENTS).split(REGEX_SEPARATOR).toList
+  val regexPatterns: Seq[String]     = getString(REGEX_PATTERNS).split(regexSep).filter(_.nonEmpty).toList
+  val regexReplacements: Seq[String] = getString(REGEX_REPLACEMENTS).split(regexSep).filter(_.nonEmpty).toList
 
   val avroConverterConf: Map[String, String] = Map(
     "schema.registry.url"          -> props.get("value.converter.schema.registry.url"),
@@ -43,7 +46,7 @@ object HttpSinkConfig {
 
   val HEADERS_SEPARATOR         = "headers.separator"
   val HEADERS_SEPARATOR_DOC     = "Separator character used in headers property."
-  val HEADERS_SEPARATOR_DEFAULT = "|"
+  val HEADERS_SEPARATOR_DEFAULT = "\\|"
 
   val BATCH_SIZE         = "batch.size"
   val BATCH_SIZE_DOC     = "The number of records accumulated in a batch before the HTTP API will be invoked"
@@ -57,9 +60,9 @@ object HttpSinkConfig {
   val BATCH_SUFFIX_DEFAULT = ""
   val BATCH_SUFFIX_DOC     = "suffix added to record batches that will be applied once at the end of the batch of records"
 
-  val BATCH_SEPARATOR         = "batch.seperator"
+  val BATCH_SEPARATOR         = "batch.separator"
   val BATCH_SEPARATOR_DEFAULT = ","
-  val BATCH_SEPARATOR_DOC     = "seperator for records in a batch"
+  val BATCH_SEPARATOR_DOC     = "separator for records in a batch"
 
   val MAX_RETRIES         = "max.retries"
   val MAX_RETRIES_DOC     = "The maximum number of times to retry on errors before failing the task"

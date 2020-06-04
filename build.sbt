@@ -21,5 +21,5 @@ lazy val sink = (project in file("modules/sink"))
   .settings(
     name := "kafka-connect-http-sink",
     moduleName := "kafka-connect-http-sink",
-    libraryDependencies ++= Dependencies.sink
+    libraryDependencies ++= Dependencies.sink ++ Dependencies.test
   )
