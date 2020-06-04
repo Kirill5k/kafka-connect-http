@@ -2,7 +2,7 @@ package io.kirill.kafka.connect.http.sink
 
 import org.apache.kafka.connect.sink.SinkRecord
 
-class HttpWriter(val config: HttpSinkConfig) {
+final class HttpWriter(val config: HttpSinkConfig) {
 
   var currentBatch: Seq[SinkRecord] = List()
 
