@@ -8,10 +8,19 @@ import org.apache.kafka.common.config.ConfigDef.{Importance, Type}
 class HttpSinkConfig(
     val props: util.Map[String, String]
 ) extends AbstractConfig(HttpSinkConfig.DEF, props) {
-  val httpApiUrl: String        = getString(HttpSinkConfig.HTTP_API_URL)
-  val httpRequestMethod: String = getString(HttpSinkConfig.HTTP_REQUEST_METHOD)
-  val batchSize: Int            = getInt(HttpSinkConfig.BATCH_SIZE)
-  val maxRetries: Int           = getInt(HttpSinkConfig.MAX_RETRIES)
+  import HttpSinkConfig._
+
+  val httpApiUrl: String             = getString(HTTP_API_URL)
+  val httpRequestMethod: String      = getString(HTTP_REQUEST_METHOD)
+  val httpHeaders: Seq[String]       = getString(HTTP_HEADERS).split(HEADERS_SEPARATOR).toList
+  val batchSize: Int                 = getInt(BATCH_SIZE)
+  val batchPrefix: String            = getString(BATCH_PREFIX)
+  val batchSeparator: String         = getString(BATCH_SEPARATOR)
+  val batchSuffix: String            = getString(BATCH_SUFFIX)
+  val maxRetries: Int                = getInt(MAX_RETRIES)
+  val retryBackoff: Long             = getLong(RETRY_BACKOFF)
+  val regexPatterns: Seq[String]     = getString(REGEX_PATTERNS).split(REGEX_SEPARATOR).toList
+  val regexReplacements: Seq[String] = getString(REGEX_REPLACEMENTS).split(REGEX_SEPARATOR).toList
 
   val avroConverterConf: Map[String, String] = Map(
     "schema.registry.url"          -> props.get("value.converter.schema.registry.url"),
