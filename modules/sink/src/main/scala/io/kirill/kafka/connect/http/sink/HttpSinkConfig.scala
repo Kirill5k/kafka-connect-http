@@ -51,8 +51,7 @@ object HttpSinkConfig {
 
   val BATCH_PREFIX         = "batch.prefix"
   val BATCH_PREFIX_DEFAULT = ""
-  val BATCH_PREFIX_DOC =
-    "prefix added to record batches that will be applied once at the beginning of the batch of records"
+  val BATCH_PREFIX_DOC     = "prefix added to record batches that will be added at the beginning of the batch of records"
 
   val BATCH_SUFFIX         = "batch.suffix"
   val BATCH_SUFFIX_DEFAULT = ""
@@ -74,9 +73,8 @@ object HttpSinkConfig {
   val REGEX_PATTERNS_DOC     = "character seperated regex patterns to match for replacement in the destination messages"
   val REGEX_PATTERNS_DEFAULT = ""
 
-  val REGEX_REPLACEMENTS = "regex.replacements"
-  val REGEX_REPLACEMENTS_DOC =
-    "character seperated regex replacements to use with the patterns in regex.patterns. ${key} and ${topic} can be used here."
+  val REGEX_REPLACEMENTS         = "regex.replacements"
+  val REGEX_REPLACEMENTS_DOC     = "character seperated regex replacements to use with the patterns in regex.patterns"
   val REGEX_REPLACEMENTS_DEFAULT = ""
 
   val REGEX_SEPARATOR         = "regex.separator"
