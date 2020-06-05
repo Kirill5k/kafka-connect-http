@@ -1,14 +1,11 @@
 package io.kirill.kafka.connect.http.sink
 
-import io.kirill.kafka.connect.http.sink.errors.SinkError
 import okhttp3.mockwebserver.{MockResponse, MockWebServer}
-import org.apache.kafka.common.config.ConfigException
 import org.apache.kafka.connect.data.{Schema, SchemaBuilder, Struct}
 import org.apache.kafka.connect.sink.SinkRecord
-import org.scalactic.source.Position
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import scala.concurrent.ExecutionContext
 
@@ -67,7 +64,6 @@ class HttpWriterSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll wi
     }
 
     "add records into a batch" in {
-
       val conf = HttpSinkConfig(java.util.Map.of(
         "http.api.url", apiUrl.toString,
         "batch.size", "3",

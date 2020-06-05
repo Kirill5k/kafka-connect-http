@@ -5,6 +5,7 @@ import org.apache.kafka.connect.sink.SinkRecord
 import scalaj.http.{Http, HttpResponse}
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 final class HttpWriter(val conf: HttpSinkConfig) extends Logging {
 
@@ -14,7 +15,10 @@ final class HttpWriter(val conf: HttpSinkConfig) extends Logging {
   def put(records: Seq[SinkRecord])(implicit ec: ExecutionContext): Unit = {
     if (currentBatch.size + records.size >= conf.batchSize) {
       val (batch, remaining) = (currentBatch ++ records).splitAt(conf.batchSize)
-      send(batch)
+      send(batch).onComplete {
+        case Success(_) => logger.info("successfully sent request")
+        case Failure(exception) => throw exception
+      }
       put(remaining)
     } else {
       currentBatch = currentBatch ++ records
