@@ -15,10 +15,7 @@ final class HttpWriter(val conf: HttpSinkConfig) extends Logging {
   def put(records: Seq[SinkRecord])(implicit ec: ExecutionContext): Unit = {
     if (currentBatch.size + records.size >= conf.batchSize) {
       val (batch, remaining) = (currentBatch ++ records).splitAt(conf.batchSize)
-      send(batch).onComplete {
-        case Success(_) => logger.info("successfully sent request")
-        case Failure(exception) => throw exception
-      }
+      sendBatch(batch)
       put(remaining)
     } else {
       currentBatch = currentBatch ++ records
@@ -26,11 +23,18 @@ final class HttpWriter(val conf: HttpSinkConfig) extends Logging {
   }
 
   def flush(implicit ec: ExecutionContext): Unit = {
-    send(currentBatch)
+    sendBatch(currentBatch)
     currentBatch = List()
   }
 
-  private def send(records: Seq[SinkRecord])(implicit ec: ExecutionContext): Future[Unit] = {
+  private def sendBatch(records: Seq[SinkRecord])(implicit ec: ExecutionContext): Unit = {
+    dispatch(records).onComplete {
+      case Success(_) => logger.info("successfully sent request")
+      case Failure(exception) => throw exception
+    }
+  }
+
+  private def dispatch(records: Seq[SinkRecord])(implicit ec: ExecutionContext): Future[Unit] = {
     Future(HttpWriter.formatRecords(conf, records))
       .map(req => HttpWriter.sendRequest(conf, req))
       .flatMap { res =>
@@ -43,7 +47,7 @@ final class HttpWriter(val conf: HttpSinkConfig) extends Logging {
   private def retry(records: Seq[SinkRecord])(implicit ec: ExecutionContext): Future[Unit] = {
     failedAttempts += 1
     if (failedAttempts <= conf.maxRetries) {
-      Future(Thread.sleep(conf.retryBackoff)).flatMap(_ => send(records))
+      Future(Thread.sleep(conf.retryBackoff)).flatMap(_ => dispatch(records))
     } else {
       Future.failed(MaxAmountOfRetriesReached)
     }
