@@ -34,22 +34,22 @@ final class HttpSinkConfig(
 
 object HttpSinkConfig {
   val HTTP_API_URL     = "http.api.url"
-  val HTTP_API_URL_DOC = "Http api url where the data will be sent"
+  val HTTP_API_URL_DOC = "http api url where the data will be sent"
 
   val HTTP_REQUEST_METHOD         = "http.request.method"
   val HTTP_REQUEST_METHOD_DOC     = "HTTP Request Method"
   val HTTP_REQUEST_METHOD_DEFAULT = "POST"
 
   val HTTP_HEADERS         = "http.headers"
-  val HTTP_HEADERS_DOC     = "HTTP headers to be included in all requests separated by the header.separator"
+  val HTTP_HEADERS_DOC     = "http headers to be included in all requests separated by the header.separator"
   val HTTP_HEADERS_DEFAULT = ""
 
   val HEADERS_SEPARATOR         = "headers.separator"
-  val HEADERS_SEPARATOR_DOC     = "Separator character used in headers property."
+  val HEADERS_SEPARATOR_DOC     = "separator character used in headers property"
   val HEADERS_SEPARATOR_DEFAULT = "\\|"
 
   val BATCH_SIZE         = "batch.size"
-  val BATCH_SIZE_DOC     = "The number of records accumulated in a batch before the HTTP API will be invoked"
+  val BATCH_SIZE_DOC     = "the number of records accumulated in a batch before the HTTP API will be invoked"
   val BATCH_SIZE_DEFAULT = 1
 
   val BATCH_PREFIX         = "batch.prefix"
@@ -65,19 +65,19 @@ object HttpSinkConfig {
   val BATCH_SEPARATOR_DOC     = "separator for records in a batch"
 
   val MAX_RETRIES         = "max.retries"
-  val MAX_RETRIES_DOC     = "The maximum number of times to retry on errors before failing the task"
+  val MAX_RETRIES_DOC     = "the maximum number of times to retry on errors before failing the task"
   val MAX_RETRIES_DEFAULT = 10
 
   val RETRY_BACKOFF         = "retry.backoff.ms"
-  val RETRY_BACKOFF_DOC     = "The duration in milliseconds to wait after an error before a retry attempt is made"
+  val RETRY_BACKOFF_DOC     = "the duration in milliseconds to wait after an error before a retry attempt is made"
   val RETRY_BACKOFF_DEFAULT = 3000
 
   val REGEX_PATTERNS         = "regex.patterns"
-  val REGEX_PATTERNS_DOC     = "character seperated regex patterns to match for replacement in the destination messages"
+  val REGEX_PATTERNS_DOC     = "character separated regex patterns to match for replacement in the destination messages"
   val REGEX_PATTERNS_DEFAULT = ""
 
   val REGEX_REPLACEMENTS         = "regex.replacements"
-  val REGEX_REPLACEMENTS_DOC     = "character seperated regex replacements to use with the patterns in regex.patterns"
+  val REGEX_REPLACEMENTS_DOC     = "character separated regex replacements to use with the patterns in regex.patterns"
   val REGEX_REPLACEMENTS_DEFAULT = ""
 
   val REGEX_SEPARATOR         = "regex.separator"
