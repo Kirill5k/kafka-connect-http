@@ -2,6 +2,7 @@ package io.kirill.kafka.connect.http.sink
 
 import java.util
 
+import info.BuildInfo
 import org.apache.kafka.common.config.ConfigDef
 import org.apache.kafka.common.utils.AppInfoParser
 import org.apache.kafka.connect.connector.Task
@@ -23,7 +24,7 @@ class HttpSinkConnector extends SinkConnector with Logging {
   }
 
   override def version(): String =
-    AppInfoParser.getVersion
+    BuildInfo.version
 
   override def stop(): Unit = {
     logger.info(s"stopping http sink connector")

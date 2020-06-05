@@ -2,6 +2,7 @@ package io.kirill.kafka.connect.http.sink
 
 import java.util
 
+import info.BuildInfo
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.TopicPartition
 import org.apache.kafka.common.utils.AppInfoParser
@@ -31,7 +32,7 @@ class HttpSinkTask extends SinkTask with Logging {
   }
 
   override def version(): String =
-    AppInfoParser.getVersion
+    BuildInfo.version
 
   override def flush(currentOffsets: util.Map[TopicPartition, OffsetAndMetadata]): Unit =
     writer.foreach(_.flush)
