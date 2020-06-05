@@ -7,9 +7,12 @@ import org.apache.kafka.common.TopicPartition
 import org.apache.kafka.common.utils.AppInfoParser
 import org.apache.kafka.connect.sink.{SinkRecord, SinkTask}
 
+import scala.concurrent.ExecutionContext
 import scala.jdk.CollectionConverters._
 
 class HttpSinkTask extends SinkTask with Logging {
+  implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
+
   var writer: Option[HttpWriter] = None
 
   override def start(props: util.Map[String, String]): Unit = {
@@ -31,5 +34,5 @@ class HttpSinkTask extends SinkTask with Logging {
     AppInfoParser.getVersion
 
   override def flush(currentOffsets: util.Map[TopicPartition, OffsetAndMetadata]): Unit =
-    writer.foreach(_.flush())
+    writer.foreach(_.flush)
 }

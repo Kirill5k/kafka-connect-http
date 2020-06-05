@@ -1,29 +1,48 @@
 package io.kirill.kafka.connect.http.sink
 
+import io.kirill.kafka.connect.http.sink.errors.MaxAmountOfRetriesReached
 import org.apache.kafka.connect.sink.SinkRecord
 import scalaj.http.{Http, HttpResponse}
 
-final class HttpWriter(val conf: HttpSinkConfig) {
+import scala.concurrent.{ExecutionContext, Future}
+
+final class HttpWriter(val conf: HttpSinkConfig) extends Logging {
 
   var currentBatch: Seq[SinkRecord] = List()
+  var failedAttempts: Int = 0
 
-  def put(records: Seq[SinkRecord]): Unit = {
+  def put(records: Seq[SinkRecord])(implicit ec: ExecutionContext): Unit = {
     if (currentBatch.size + records.size >= conf.batchSize) {
       val (batch, remaining) = (currentBatch ++ records).splitAt(conf.batchSize)
       send(batch)
-      currentBatch = remaining
+      put(remaining)
     } else {
       currentBatch = currentBatch ++ records
     }
   }
 
-  def flush(): Unit = {
+  def flush(implicit ec: ExecutionContext): Unit = {
     send(currentBatch)
     currentBatch = List()
   }
 
-  def send(records: Seq[SinkRecord]): Unit = {
+  private def send(records: Seq[SinkRecord])(implicit ec: ExecutionContext): Future[Unit] = {
+    Future(HttpWriter.formatRecords(conf, records))
+      .map(req => HttpWriter.sendRequest(conf, req))
+      .flatMap { res =>
+        if (res.is2xx) Future.successful(())
+        else Future(logger.error(s"error sending records batch. code - ${res.code}. response - ${res.body}"))
+          .flatMap(_ => retry(records))
+      }
+  }
 
+  private def retry(records: Seq[SinkRecord])(implicit ec: ExecutionContext): Future[Unit] = {
+    failedAttempts += 1
+    if (failedAttempts <= conf.maxRetries) {
+      Future(Thread.sleep(conf.retryBackoff)).flatMap(_ => send(records))
+    } else {
+      Future.failed(MaxAmountOfRetriesReached)
+    }
   }
 }
 

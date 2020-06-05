@@ -1,6 +1,8 @@
 package io.kirill.kafka.connect.http.sink
 
+import io.kirill.kafka.connect.http.sink.errors.SinkError
 import okhttp3.mockwebserver.{MockResponse, MockWebServer}
+import org.apache.kafka.common.config.ConfigException
 import org.apache.kafka.connect.data.{Schema, SchemaBuilder, Struct}
 import org.apache.kafka.connect.sink.SinkRecord
 import org.scalactic.source.Position
@@ -8,7 +10,10 @@ import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class HttpWriterSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll {
+import scala.concurrent.ExecutionContext
+
+class HttpWriterSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with BeforeAndAfter {
+  implicit val ex: ExecutionContext = scala.concurrent.ExecutionContext.global
 
   val mockServer = new MockWebServer()
   val apiUrl = mockServer.url("/api/")
@@ -59,6 +64,102 @@ class HttpWriterSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       recordedRequest.getHeader("content-type") must be ("application/json")
       recordedRequest.getHeader("accept") must be ("application/json")
       recordedRequest.getMethod must be ("PUT")
+    }
+
+    "add records into a batch" in {
+
+      val conf = HttpSinkConfig(java.util.Map.of(
+        "http.api.url", apiUrl.toString,
+        "batch.size", "3",
+        "http.headers", "content-type:application/json|accept:application/json"
+      ))
+      val records = List(record(), record())
+      val writer = HttpWriter(conf)
+
+      writer.put(records)
+
+      writer.currentBatch must be (records)
+    }
+
+    "send records when batch is full until it is empty" in {
+      mockServer.enqueue(new MockResponse().setResponseCode(200))
+      mockServer.enqueue(new MockResponse().setResponseCode(200))
+      mockServer.enqueue(new MockResponse().setResponseCode(200))
+
+      val conf = HttpSinkConfig(java.util.Map.of(
+        "http.api.url", apiUrl.toString,
+        "batch.size", "1",
+        "http.headers", "content-type:application/json|accept:application/json"
+      ))
+
+      val writer = HttpWriter(conf)
+
+      writer.put(List(record(), record(), record()))
+
+      Thread.sleep(1000)
+
+      writer.currentBatch must be (Nil)
+    }
+
+    "flush records" in {
+      mockServer.enqueue(new MockResponse().setResponseCode(200))
+
+      val conf = HttpSinkConfig(java.util.Map.of(
+        "http.api.url", apiUrl.toString,
+        "batch.size", "1",
+        "http.headers", "content-type:application/json|accept:application/json"
+      ))
+
+      val writer = HttpWriter(conf)
+      writer.currentBatch = List(record())
+
+      writer.flush
+
+      Thread.sleep(1000)
+
+      writer.currentBatch must be (Nil)
+    }
+
+    "retry on error" in {
+      mockServer.enqueue(new MockResponse().setResponseCode(400))
+      mockServer.enqueue(new MockResponse().setResponseCode(400))
+      mockServer.enqueue(new MockResponse().setResponseCode(200))
+
+      val conf = HttpSinkConfig(java.util.Map.of(
+        "http.api.url", apiUrl.toString,
+        "batch.size", "1",
+        "retry.backoff.ms", "100",
+        "http.headers", "content-type:application/json|accept:application/json"
+      ))
+
+      val writer = HttpWriter(conf)
+
+      writer.put(List(record()))
+
+      Thread.sleep(1000)
+
+      writer.currentBatch must be (Nil)
+      writer.failedAttempts must be (2)
+    }
+
+    "throw an exception when max amount of retries reached" in {
+      mockServer.enqueue(new MockResponse().setResponseCode(400))
+      mockServer.enqueue(new MockResponse().setResponseCode(400))
+
+      val conf = HttpSinkConfig(java.util.Map.of(
+        "http.api.url", apiUrl.toString,
+        "batch.size", "1",
+        "max.retries", "1",
+        "retry.backoff.ms", "100",
+        "http.headers", "content-type:application/json|accept:application/json"
+      ))
+
+      val writer = HttpWriter(conf)
+
+      writer.put(List(record()))
+      Thread.sleep(1000)
+
+      writer.failedAttempts must be(2)
     }
   }
 
