@@ -9,6 +9,8 @@ ThisBuild / resolvers ++= Seq(
   Resolver.sbtPluginRepo("releases")
 )
 
+releaseVersionBump := sbtrelease.Version.Bump.Next
+releaseCrossBuild := false
 
 lazy val root = (project in file("."))
   .settings(
@@ -21,5 +23,19 @@ lazy val sink = (project in file("modules/sink"))
   .settings(
     name := "kafka-connect-http-sink",
     moduleName := "kafka-connect-http-sink",
-    libraryDependencies ++= Dependencies.sink ++ Dependencies.test
+    libraryDependencies ++= Dependencies.sink ++ Dependencies.test,
+    assembly / assemblyJarName := "kafka-connect-http-sink.jar",
+    assembly / assemblyOption := (assembly / assemblyOption).value.copy(
+      includeScala = false,
+      includeDependency = true
+    ),
+    assembly / assemblyMergeStrategy := {
+      case PathList("META-INF", xs @ _*) => MergeStrategy.discard
+      case x                             => MergeStrategy.first
+    },
+    artifact in (Compile, assembly) := {
+      val art = (artifact in (Compile, assembly)).value
+      art.withClassifier(Some("assembly"))
+    },
+    addArtifact(artifact in (Compile, assembly), assembly)
   )
