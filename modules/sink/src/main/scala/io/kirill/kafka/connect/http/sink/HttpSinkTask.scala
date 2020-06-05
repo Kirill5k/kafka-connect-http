@@ -5,7 +5,6 @@ import java.util
 import info.BuildInfo
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.TopicPartition
-import org.apache.kafka.common.utils.AppInfoParser
 import org.apache.kafka.connect.sink.{SinkRecord, SinkTask}
 
 import scala.concurrent.ExecutionContext
@@ -27,9 +26,8 @@ class HttpSinkTask extends SinkTask with Logging {
     writer.foreach(_.put(recs))
   }
 
-  override def stop(): Unit = {
+  override def stop(): Unit =
     logger.info(s"stopping http sink connector task")
-  }
 
   override def version(): String =
     BuildInfo.version

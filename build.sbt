@@ -1,5 +1,5 @@
-ThisBuild / scalaVersion     := "2.13.2"
-ThisBuild / organization     := "io.kirill"
+ThisBuild / scalaVersion := "2.13.2"
+ThisBuild / organization := "io.kirill"
 ThisBuild / organizationName := "example"
 ThisBuild / resolvers ++= Seq(
   "Confluent" at "https://packages.confluent.io/maven/",
@@ -14,7 +14,7 @@ releaseCrossBuild := false
 lazy val root = (project in file("."))
   .settings(
     name := "kafka-connect-http",
-    publish / skip := true,
+    publish / skip := true
   )
   .aggregate(sink)
 
