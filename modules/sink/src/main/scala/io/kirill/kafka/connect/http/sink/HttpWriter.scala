@@ -7,7 +7,7 @@ import scalaj.http.{Http, HttpResponse}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-final class HttpWriter(val conf: HttpSinkConfig) extends Logging {
+class HttpWriter(val conf: HttpSinkConfig) extends Logging {
 
   var currentBatch: Seq[SinkRecord] = List()
   var failedAttempts: Int           = 0

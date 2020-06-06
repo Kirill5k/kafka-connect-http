@@ -5,7 +5,7 @@ import java.util
 import org.apache.kafka.common.config.{AbstractConfig, ConfigDef}
 import org.apache.kafka.common.config.ConfigDef.{Importance, Type}
 
-final class HttpSinkConfig(
+class HttpSinkConfig(
     val props: util.Map[String, String]
 ) extends AbstractConfig(HttpSinkConfig.DEF, props) {
   import HttpSinkConfig._

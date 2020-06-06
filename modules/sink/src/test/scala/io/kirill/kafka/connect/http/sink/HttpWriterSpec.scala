@@ -169,6 +169,6 @@ class HttpWriterSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll wi
     val message = new Struct(schema)
       .put("name", name)
       .put("age", 21)
-    new SinkRecord("egress", 1, null, "key", schema, message, 1)
+    new SinkRecord("topic", 1, null, "key", schema, message, 1)
   }
 }

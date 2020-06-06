@@ -1,6 +1,5 @@
 package io.kirill.kafka.connect.http.sink
 
-import org.apache.kafka.connect.sink.SinkConnector
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
