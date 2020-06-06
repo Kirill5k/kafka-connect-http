@@ -6,6 +6,8 @@ The kafka connect http sink connector consumes records from the specified kafka 
 
 ### Configuration
 
+|Property | Description |
+|--- | --- |
 |`http.api.url`|http api url where the data will be sent|
 |`http.request.method`|http Request Method|
 |`http.headers`|http headers to be included in all requests separated by the header.separator|
