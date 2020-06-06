@@ -1,0 +1,74 @@
+version: '3.3'
+
+services:
+
+  zookeeper:
+    container_name: zookeeper
+    restart: always
+    image: wurstmeister/zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    ports:
+      - 2181:2181
+
+  kafka:
+    container_name: kafka
+    image: wurstmeister/kafka:2.11-1.1.1
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENERS: PLAINTEXT://:9092,PLAINTEXT_HOST://:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CREATE_TOPICS: "test-kafka-topic:1:1"
+      KAFKA_JMX_OPTS: "-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=127.0.0.1 -Dcom.sun.management.jmxremote.rmi.port=1099"
+      JMX_PORT: 1099
+    ports:
+      - 9092:9092
+      - 29092:29092
+      - 1099:1099
+    depends_on:
+      - zookeeper
+
+  schemaregistry:
+    container_name: schemaregistry
+    image: confluentinc/cp-schema-registry:5.4.0
+    restart: always
+    depends_on:
+      - zookeeper
+    environment:
+      SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL: "zookeeper:2181"
+      SCHEMA_REGISTRY_HOST_NAME: schemaregistry
+      SCHEMA_REGISTRY_LISTENERS: "http://0.0.0.0:8081"
+      SCHEMA_REGISTRY_AVRO_COMPATIBILITY_LEVEL: FULL
+    ports:
+      - 8081:8081
+
+  connect-http-sink:
+    container_name: connect-http-sink
+    build:
+      context: modules/sink
+    depends_on:
+      - zookeeper
+      - kafka
+    ports:
+      - 8083:8083
+
+  connect-http-sink-jobs:
+    container_name: connect-http-sink-jobs
+    build: jobs/http-sink
+    depends_on:
+      - connect-http-sink
+
+  kafka-web-view:
+    container_name: kafka-web-view
+    image: obsidiandynamics/kafdrop
+    environment:
+      - KAFKA_BROKERCONNECT=kafka:9092
+      - CMD_ARGS=--schemaregistry.connect=http://schemaregistry:8081 --message.format=AVRO
+    depends_on:
+      - kafka
+      - schemaregistry
+    ports:
+      - 9000:9000
