@@ -57,7 +57,7 @@ services:
 
   connect-http-sink-jobs:
     container_name: connect-http-sink-jobs
-    build: jobs/http-sink
+    build: jobs/sink
     depends_on:
       - connect-http-sink
 
