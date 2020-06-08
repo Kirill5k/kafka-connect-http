@@ -2,7 +2,6 @@ package io.kirill.kafka.connect.http.sink
 
 import java.util
 
-import info.BuildInfo
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.TopicPartition
 import org.apache.kafka.connect.sink.{SinkRecord, SinkTask}
@@ -32,7 +31,7 @@ class HttpSinkTask extends SinkTask with Logging {
     logger.info(s"stopping http sink connector task")
 
   override def version(): String =
-    BuildInfo.version
+    getClass.getPackage.getImplementationVersion
 
   override def flush(currentOffsets: util.Map[TopicPartition, OffsetAndMetadata]): Unit =
     writer.foreach(_.flush)

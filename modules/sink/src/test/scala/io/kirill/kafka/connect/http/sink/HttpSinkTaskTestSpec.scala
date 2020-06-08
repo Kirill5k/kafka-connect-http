@@ -46,12 +46,6 @@ class HttpSinkTaskTestSpec extends AnyWordSpec with Matchers with MockitoSugar {
       verify(writerMock, never).put(any[List[SinkRecord]])(any[ExecutionContext])
     }
 
-    "version" in {
-      val task = new HttpSinkTask()
-
-      task.version() must be("0.0.1-SNAPSHOT")
-    }
-
     "flush" in {
       val writerMock = mock[HttpWriter]
       val task = new HttpSinkTask()

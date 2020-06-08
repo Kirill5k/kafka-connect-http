@@ -17,10 +17,6 @@ class HttpSinkConnectorSpec extends AnyWordSpec with Matchers {
       connector.taskConfigs(3) must be(List(props, props, props).asJava)
     }
 
-    "version" in {
-      connector.version() must be("0.0.1-SNAPSHOT")
-    }
-
     "config" in {
       connector.config() must be(HttpSinkConfig.DEF)
     }

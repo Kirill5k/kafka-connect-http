@@ -37,7 +37,5 @@ lazy val sink = (project in file("modules/sink"))
       val art = (artifact in (Compile, assembly)).value
       art.withClassifier(Some("assembly"))
     },
-    addArtifact(artifact in (Compile, assembly), assembly),
-    buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
-    buildInfoPackage := "info"
+    addArtifact(artifact in (Compile, assembly), assembly)
   )
