@@ -1,5 +1,7 @@
 package io.kirill.kafka.connect.http.sink
 
+import java.time.Instant
+
 import io.kirill.kafka.connect.http.sink.errors.MaxAmountOfRetriesReached
 import org.apache.kafka.connect.sink.SinkRecord
 import scalaj.http.{Http, HttpResponse}
@@ -11,15 +13,21 @@ class HttpWriter(val conf: HttpSinkConfig) extends Logging {
 
   var currentBatch: Seq[SinkRecord] = List()
   var failedAttempts: Int           = 0
+  var time: Long                    = Instant.now.toEpochMilli
 
-  def put(records: Seq[SinkRecord])(implicit ec: ExecutionContext): Unit =
-    if (currentBatch.size + records.size >= conf.batchSize) {
+  def put(records: Seq[SinkRecord])(implicit ec: ExecutionContext): Unit = {
+    val currentTime = Instant.now().toEpochMilli
+    if (currentBatch.size + records.size >= conf.batchSize || currentTime - time >= conf.batchIntervalMs) {
+      time = currentTime
       val (batch, remaining) = (currentBatch ++ records).splitAt(conf.batchSize)
       sendBatch(batch)
-      put(remaining)
+      if (remaining.nonEmpty) {
+        put(remaining)
+      }
     } else {
       currentBatch = currentBatch ++ records
     }
+  }
 
   def flush(implicit ec: ExecutionContext): Unit = {
     sendBatch(currentBatch)

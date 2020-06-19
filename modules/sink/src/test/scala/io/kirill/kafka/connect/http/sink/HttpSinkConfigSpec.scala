@@ -22,6 +22,7 @@ class HttpSinkConfigSpec extends AnyWordSpec with Matchers {
       config.httpRequestMethod must be("POST")
       config.httpHeaders must be(Nil)
       config.batchSize must be(1)
+      config.batchIntervalMs must be(Long.MaxValue)
       config.batchPrefix must be("")
       config.batchSuffix must be("")
       config.batchSeparator must be(",")
@@ -38,6 +39,7 @@ class HttpSinkConfigSpec extends AnyWordSpec with Matchers {
         "http.headers"        -> "content-type:application/json|accept:application/json",
         "headers.separator"   -> "\\|",
         "batch.size"          -> "100",
+        "batch.interval.ms"   -> "100",
         "batch.prefix"        -> "[",
         "batch.suffix"        -> "]",
         "batch.separator"     -> ";",
@@ -54,6 +56,7 @@ class HttpSinkConfigSpec extends AnyWordSpec with Matchers {
       config.httpRequestMethod must be("PUT")
       config.httpHeaders must be(List("content-type:application/json", "accept:application/json"))
       config.batchSize must be(100)
+      config.batchIntervalMs must be (100)
       config.batchPrefix must be("[")
       config.batchSuffix must be("]")
       config.batchSeparator must be(";")

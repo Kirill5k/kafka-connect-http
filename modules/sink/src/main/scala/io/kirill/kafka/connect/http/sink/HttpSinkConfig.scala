@@ -17,6 +17,7 @@ class HttpSinkConfig(
   val httpRequestMethod: String      = getString(HTTP_REQUEST_METHOD)
   val httpHeaders: Seq[String]       = getString(HTTP_HEADERS).split(headerSep).filter(_.nonEmpty).toList
   val batchSize: Int                 = getInt(BATCH_SIZE)
+  val batchIntervalMs: Long          = getLong(BATCH_INTERVAL_MS)
   val batchPrefix: String            = getString(BATCH_PREFIX)
   val batchSeparator: String         = getString(BATCH_SEPARATOR)
   val batchSuffix: String            = getString(BATCH_SUFFIX)
@@ -64,6 +65,10 @@ object HttpSinkConfig {
   val BATCH_SEPARATOR_DEFAULT = ","
   val BATCH_SEPARATOR_DOC     = "separator for records in a batch"
 
+  val BATCH_INTERVAL_MS         = "batch.interval.ms"
+  val BATCH_INTERVAL_MS_DEFAULT = Long.MaxValue
+  val BATCH_INTERVAL_MS_DOC     = "Interval at which record will be sent in ms"
+
   val MAX_RETRIES         = "max.retries"
   val MAX_RETRIES_DOC     = "the maximum number of times to retry on errors before failing the task"
   val MAX_RETRIES_DEFAULT = 10
@@ -90,6 +95,7 @@ object HttpSinkConfig {
     .define(HTTP_HEADERS, Type.STRING, HTTP_HEADERS_DEFAULT, Importance.LOW, HTTP_HEADERS_DOC)
     .define(BATCH_SIZE, Type.INT, BATCH_SIZE_DEFAULT, Importance.MEDIUM, BATCH_SIZE_DOC)
     .define(BATCH_PREFIX, Type.STRING, BATCH_PREFIX_DEFAULT, Importance.MEDIUM, BATCH_PREFIX_DOC)
+    .define(BATCH_INTERVAL_MS, Type.LONG, BATCH_INTERVAL_MS_DEFAULT, Importance.MEDIUM, BATCH_INTERVAL_MS_DOC)
     .define(BATCH_SUFFIX, Type.STRING, BATCH_SUFFIX_DEFAULT, Importance.MEDIUM, BATCH_SUFFIX_DOC)
     .define(BATCH_SEPARATOR, Type.STRING, BATCH_SEPARATOR_DEFAULT, Importance.MEDIUM, BATCH_SEPARATOR_DOC)
     .define(HEADERS_SEPARATOR, Type.STRING, HEADERS_SEPARATOR_DEFAULT, Importance.MEDIUM, HEADERS_SEPARATOR_DOC)

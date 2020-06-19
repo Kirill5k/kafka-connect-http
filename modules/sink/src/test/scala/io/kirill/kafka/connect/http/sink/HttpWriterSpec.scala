@@ -1,5 +1,7 @@
 package io.kirill.kafka.connect.http.sink
 
+import java.time.Instant
+
 import okhttp3.mockwebserver.{MockResponse, MockWebServer}
 import org.apache.kafka.connect.data.{Schema, SchemaBuilder, Struct}
 import org.apache.kafka.connect.sink.SinkRecord
@@ -89,6 +91,26 @@ class HttpWriterSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll wi
       ))
 
       val writer = HttpWriter(conf)
+
+      writer.put(List(record(), record(), record()))
+
+      Thread.sleep(1000)
+
+      writer.currentBatch must be (Nil)
+    }
+
+    "send records when timer is out" in {
+      mockServer.enqueue(new MockResponse().setResponseCode(200))
+
+      val conf = HttpSinkConfig(java.util.Map.of(
+        "http.api.url", apiUrl.toString,
+        "batch.size", "5",
+        "batch.interval.ms", "100",
+        "http.headers", "content-type:application/json|accept:application/json"
+      ))
+
+      val writer = HttpWriter(conf)
+      writer.time = Instant.now().toEpochMilli - 1000
 
       writer.put(List(record(), record(), record()))
 
