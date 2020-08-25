@@ -1,4 +1,4 @@
-ThisBuild / scalaVersion := "2.13.2"
+ThisBuild / scalaVersion := "2.13.3"
 ThisBuild / organization := "io.kirill"
 ThisBuild / organizationName := "example"
 ThisBuild / resolvers ++= Seq(

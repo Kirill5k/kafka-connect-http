@@ -66,7 +66,7 @@ object HttpWriter {
     Http(conf.httpApiUrl)
       .postData(body)
       .method(conf.httpRequestMethod)
-      .headers(conf.httpHeaders.map(_.split(":")).map(x => (x(0), x(1))))
+      .headers(conf.httpHeaders)
       .asString
 
   def formatRecords(conf: HttpSinkConfig, records: Seq[SinkRecord]): String = {

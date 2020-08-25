@@ -30,6 +30,11 @@ class HttpSinkConfigSpec extends AnyWordSpec with Matchers {
       config.retryBackoff must be(3000)
       config.regexPatterns must be(List(""))
       config.regexReplacements must be(List(""))
+
+      config.authType must be("none")
+      config.oauth2TokenUrl must be("")
+      config.oauth2ClientId must be("")
+      config.oauth2ClientSecret must be("")
     }
 
     "set correct props" in {
@@ -47,14 +52,18 @@ class HttpSinkConfigSpec extends AnyWordSpec with Matchers {
         "retry.backoff.ms"    -> "10",
         "regex.patterns"      -> "^foo~bar$",
         "regex.replacements"  -> "bar~foo",
-        "regex.separator"     -> "~"
+        "regex.separator"     -> "~",
+        "auth.type"           -> "oauth2",
+        "auth.oauth2.client.id"      -> "client-id",
+        "auth.oauth2.client.secret"  -> "client-secret",
+        "auth.oauth2.token.url"      -> "http://foo.bar/token"
       )
 
       val config = new HttpSinkConfig(props.asJava)
 
       config.httpApiUrl must be("http://foo.bar")
       config.httpRequestMethod must be("PUT")
-      config.httpHeaders must be(List("content-type:application/json", "accept:application/json"))
+      config.httpHeaders must be(Map("content-type" -> "application/json", "accept" -> "application/json"))
       config.batchSize must be(100)
       config.batchIntervalMs must be (100)
       config.batchPrefix must be("[")
@@ -64,6 +73,11 @@ class HttpSinkConfigSpec extends AnyWordSpec with Matchers {
       config.retryBackoff must be(10)
       config.regexPatterns must be(List("^foo", "bar$"))
       config.regexReplacements must be(List("bar", "foo"))
+
+      config.authType must be("oauth2")
+      config.oauth2TokenUrl must be("http://foo.bar/token")
+      config.oauth2ClientId must be("client-id")
+      config.oauth2ClientSecret must be("client-secret")
     }
   }
 }
