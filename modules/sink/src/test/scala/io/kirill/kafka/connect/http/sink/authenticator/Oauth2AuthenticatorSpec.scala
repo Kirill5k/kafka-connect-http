@@ -3,63 +3,59 @@ package io.kirill.kafka.connect.http.sink.authenticator
 import io.kirill.kafka.connect.http.sink.HttpSinkConfig
 import io.kirill.kafka.connect.http.sink.authenticator.Oauth2Authenticator.AuthToken
 import io.kirill.kafka.connect.http.sink.errors.{AuthError, JsonParsingError}
-import org.mockserver.integration.ClientAndServer
-import org.mockserver.model.HttpRequest.request
-import org.mockserver.model.HttpResponse.response
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import sttp.client.HttpURLConnectionBackend
+import sttp.client.testing.SttpBackendStub
+import sttp.client.{Response, StringBody, SttpClientException}
+import sttp.model.{Header, Method, StatusCode}
 
 class Oauth2AuthenticatorSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
-  val backend = HttpURLConnectionBackend()
-
   val config = HttpSinkConfig(
     Map(
-      "http.api.url"              -> "http://localhost:12346/events",
+      "http.api.url"              -> "http://localhost:8080/events",
       "schemas.enable"            -> "false",
       "auth.type"                 -> "oauth2",
       "auth.oauth2.client.id"     -> "client-id",
       "auth.oauth2.client.secret" -> "client-secret",
-      "auth.oauth2.token.url"     -> "http://localhost:12346/token"
+      "auth.oauth2.token.url"     -> "http://localhost:8080/token"
     )
   )
 
   "An Oauth2Authenticator" should {
 
-    "return auth header if token is still valid" in withMockserver { server =>
+    "return auth header if token is still valid" in {
+      val backend = SttpBackendStub.synchronous
+        .whenAnyRequest
+        .thenRespond(throw new SttpClientException.ConnectException(new RuntimeException))
+
       val authToken     = AuthToken("valid-token", 1000)
       val authenticator = new Oauth2Authenticator(config, backend, authToken)
 
       authenticator.authHeader() must be("Bearer valid-token")
-      server.verifyZeroInteractions()
     }
 
-    "obtain new access token if current auth token has expire" in withMockserver { server =>
-      server
-        .when(request().withMethod("POST").withPath("/token"))
-        .respond(response().withBody(s"""
-            |{"access_token": "new-token","expires_in": 7200,"token_type": "Application Access Token"}
-            |""".stripMargin))
+    "obtain new access token if current auth token has expire" in {
+      val backend = SttpBackendStub.synchronous
+        .whenRequestMatches { r =>
+          r.method == Method.POST &&
+            r.headers.contains(Header("Content-Type", "application/x-www-form-urlencoded")) &&
+            r.headers.contains(Header("Authorization", "Basic Y2xpZW50LWlkOmNsaWVudC1zZWNyZXQ=")) &&
+            r.body.asInstanceOf[StringBody].s == "client_id=client-id&client_secret=client-secret&grant_type=client_credentials"
+        }
+        .thenRespond("""{"access_token": "new-token","expires_in": 7200,"token_type": "Application Access Token"}""")
 
       val authToken     = AuthToken("expired-token", 0)
       val authenticator = new Oauth2Authenticator(config, backend, authToken)
 
       authenticator.authHeader() must be("Bearer new-token")
-
-      server.verify(
-        request()
-          .withHeader("Content-Type", "application/x-www-form-urlencoded")
-          .withHeader("Authorization", "Basic Y2xpZW50LWlkOmNsaWVudC1zZWNyZXQ=")
-          .withBody("client_id=client-id&client_secret=client-secret&grant_type=client_credentials")
-      )
     }
 
-    "throw parsing error when unexpected response returned" in withMockserver { server =>
-      server
-        .when(request().withMethod("POST").withPath("/token"))
-        .respond(response().withBody(s"""{"foo": "bar"}""".stripMargin))
+    "throw parsing error when unexpected response returned" in {
+      val backend = SttpBackendStub.synchronous
+        .whenAnyRequest
+        .thenRespond("""{"foo": "bar"}""")
 
       val authToken     = AuthToken("expired-token", 0)
       val authenticator = new Oauth2Authenticator(config, backend, authToken)
@@ -69,10 +65,10 @@ class Oauth2AuthenticatorSpec extends AnyWordSpec with Matchers with BeforeAndAf
       }
     }
 
-    "throw auth error when fail response returned" in withMockserver { server =>
-      server
-        .when(request().withMethod("POST").withPath("/token"))
-        .respond(response().withBody(s"""{"error": "invalid client id"}""".stripMargin).withStatusCode(401))
+    "throw auth error when fail response returned" in {
+      val backend = SttpBackendStub.synchronous
+        .whenAnyRequest
+        .thenRespond(Response("error", StatusCode.InternalServerError))
 
       val authToken     = AuthToken("expired-token", 0)
       val authenticator = new Oauth2Authenticator(config, backend, authToken)
@@ -80,15 +76,6 @@ class Oauth2AuthenticatorSpec extends AnyWordSpec with Matchers with BeforeAndAf
       assertThrows[AuthError] {
         authenticator.authHeader()
       }
-    }
-  }
-
-  def withMockserver(test: ClientAndServer => Any): Any = {
-    val server = new ClientAndServer(12346)
-    try {
-      test(server)
-    } finally {
-      server.stop()
     }
   }
 }

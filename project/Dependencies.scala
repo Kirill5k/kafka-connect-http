@@ -15,10 +15,10 @@ object Dependencies {
   }
 
   object Libraries {
-    lazy val connectApi  = "org.apache.kafka" % "connect-api"                  % Versions.kafka
-    lazy val connectAvro = "io.confluent"     % "kafka-connect-avro-converter" % Versions.confluent
-    lazy val connectJson = "org.apache.kafka" % "connect-json"                 % Versions.kafka
-    lazy val sttpCore = "com.softwaremill.sttp.client" %% "core" % Versions.sttp
+    lazy val connectApi  = "org.apache.kafka"             % "connect-api"                  % Versions.kafka
+    lazy val connectAvro = "io.confluent"                 % "kafka-connect-avro-converter" % Versions.confluent
+    lazy val connectJson = "org.apache.kafka"             % "connect-json"                 % Versions.kafka
+    lazy val sttpCore    = "com.softwaremill.sttp.client" %% "core"                        % Versions.sttp
 
     lazy val circeCore    = "io.circe" %% "circe-core"    % Versions.circe
     lazy val circeParser  = "io.circe" %% "circe-parser"  % Versions.circe
