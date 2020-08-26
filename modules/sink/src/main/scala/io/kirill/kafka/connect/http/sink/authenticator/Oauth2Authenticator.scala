@@ -41,7 +41,7 @@ private[authenticator] final class Oauth2Authenticator(
         val accessToken = decode[AccessTokenResponse](json).getOrElse(throw JsonParsingError(json))
         authToken = AuthToken(accessToken.access_token, accessToken.expires_in)
       case Left(error) =>
-        throw AuthError(s"error obtaining auth token. ${error}")
+        throw AuthError(s"error obtaining auth token. $error")
     }
   }
 }
@@ -60,7 +60,7 @@ private[authenticator] object Oauth2Authenticator {
   }
 
   object AuthToken {
-    def apply(token: String, expiresIn: Long): AuthToken =
-      AuthToken(token, Instant.now().plusSeconds(expiresIn))
+    def apply(token: String, expiresIn: Long, expirationPenalty: Long = 30): AuthToken =
+      AuthToken(token, Instant.now().plusSeconds(expiresIn - expirationPenalty))
   }
 }

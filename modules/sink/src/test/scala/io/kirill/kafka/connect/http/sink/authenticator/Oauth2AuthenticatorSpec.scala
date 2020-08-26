@@ -68,14 +68,31 @@ class Oauth2AuthenticatorSpec extends AnyWordSpec with Matchers with BeforeAndAf
     "throw auth error when fail response returned" in {
       val backend = SttpBackendStub.synchronous
         .whenAnyRequest
-        .thenRespond(Response("error", StatusCode.InternalServerError))
+        .thenRespond(Response("error-message", StatusCode.InternalServerError))
 
       val authToken     = AuthToken("expired-token", 0)
       val authenticator = new Oauth2Authenticator(config, backend, authToken)
 
-      assertThrows[AuthError] {
+      val error = intercept[AuthError] {
         authenticator.authHeader()
       }
+
+      error.message must be ("error obtaining auth token. error-message")
+    }
+
+    "throw auth error when request fails" in {
+      val backend = SttpBackendStub.synchronous
+        .whenAnyRequest
+        .thenRespond(throw new SttpClientException.ConnectException(new RuntimeException))
+
+      val authToken     = AuthToken("valid-token", -1)
+      val authenticator = new Oauth2Authenticator(config, backend, authToken)
+
+      val error = intercept[AuthError] {
+        authenticator.authHeader()
+      }
+
+      error.message must be ("error obtaining auth token. error-message")
     }
   }
 }

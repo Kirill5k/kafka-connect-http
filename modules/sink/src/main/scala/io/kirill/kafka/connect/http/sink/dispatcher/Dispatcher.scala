@@ -18,6 +18,7 @@ private[dispatcher] final class SttpDispatcher(
   override def send(headers: Map[String, String], body: String): Unit = {
     val response = sendRequest(headers, body)
     if (!response.isSuccess) {
+      logger.error(s"error dispatching data. ${response.code.code}: ${response.body.fold(s => s, s => s)}")
       retry(headers, body)
     }
   }
@@ -26,7 +27,7 @@ private[dispatcher] final class SttpDispatcher(
     failedAttempts += 1
     if (failedAttempts <= config.maxRetries) {
       Thread.sleep(config.retryBackoff)
-      sendRequest(headers, body)
+      send(headers, body)
     } else {
       throw MaxAmountOfRetriesReached
     }

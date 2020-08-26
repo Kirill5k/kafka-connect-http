@@ -1,26 +1,19 @@
 package io.kirill.kafka.connect.http.sink.dispatcher
 
 import io.kirill.kafka.connect.http.sink.HttpSinkConfig
-import org.mockserver.integration.ClientAndServer
-import org.mockserver.matchers.Times
-import org.mockserver.model.HttpError
-import org.mockserver.model.HttpRequest.request
-import org.mockserver.model.HttpResponse.response
-import org.mockserver.verify.VerificationTimes
+import io.kirill.kafka.connect.http.sink.errors.SinkError
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import sttp.client.HttpURLConnectionBackend
-
-import scala.concurrent.ExecutionContext
+import sttp.client.testing.SttpBackendStub
+import sttp.client.{Response, StringBody}
+import sttp.model.{Header, Method, StatusCode}
 
 class DispatcherSpec extends AnyWordSpec with Matchers {
-  implicit val ex: ExecutionContext = scala.concurrent.ExecutionContext.global
-
-  val backend = HttpURLConnectionBackend()
 
   val config = HttpSinkConfig(
     Map(
-      "http.api.url" -> "http://localhost:12345/data",
+      "http.api.url" -> "http://localhost:8080/data",
+      "http.request.method" -> "PUT",
       "max.retries" -> "4",
       "retry.backoff.ms" -> "0"
     )
@@ -28,51 +21,51 @@ class DispatcherSpec extends AnyWordSpec with Matchers {
 
   "A LiveDispatcher" should {
 
-    "send http request" in withMockserver { server =>
-      server
-        .when(request().withMethod("POST").withPath("/data"))
-        .respond(response().withStatusCode(200))
+    "send http request" in {
+      val backend = SttpBackendStub.synchronous
+        .whenRequestMatches { r =>
+          r.method == Method.PUT &&
+            r.headers.contains(Header("Content-Type", "application/json"))
+            r.body.asInstanceOf[StringBody].s == "{\"foo\":\"bar\"}"
+        }
+        .thenRespond(Response.ok("ok"))
 
       val dispatcher = Dispatcher.sttp(config, backend)
 
-      dispatcher.send(Map("Content-Type" -> "application/x-www-form-urlencoded"), "foo=bar")
-
-      server.verify(
-        request()
-          .withHeader("Content-Type", "application/x-www-form-urlencoded")
-          .withMethod("POST")
-          .withBody("foo=bar")
-      )
+      dispatcher.send(Map("Content-Type" -> "application/json"), "{\"foo\":\"bar\"}")
     }
 
-    "retry on failed attempt" in withMockserver { server =>
-      server
-        .when(request().withMethod("POST").withPath("/data"), Times.exactly(2))
-        .respond(response().withStatusCode(500).withBody("error"))
-      server
-        .when(request().withMethod("POST").withPath("/data"))
-        .respond(response().withStatusCode(200))
+    "retry on failed attempt" in {
+      val backend = SttpBackendStub.synchronous
+        .whenAnyRequest
+        .thenRespondCyclicResponses(
+          Response("error", StatusCode.InternalServerError, "Something went wrong"),
+          Response("error", StatusCode.InternalServerError, "Something went wrong"),
+          Response.ok("ok")
+        )
 
       val dispatcher = Dispatcher.sttp(config, backend)
 
-      dispatcher.send(Map("Content-Type" -> "application/x-www-form-urlencoded"), "foo=bar")
-
-      server.verify(
-        request()
-          .withHeader("Content-Type", "application/x-www-form-urlencoded")
-          .withMethod("POST")
-          .withBody("foo=bar"),
-        VerificationTimes.exactly(3)
-      )
+      dispatcher.send(Map("Content-Type" -> "application/json"), "{\"foo\":\"bar\"}")
     }
-  }
 
-  def withMockserver(test: ClientAndServer => Any): Any = {
-    val server = new ClientAndServer(12345)
-    try {
-      test(server)
-    } finally {
-      server.stop()
+    "thrown an exception when number of retries is greater than max" in {
+      val backend = SttpBackendStub.synchronous
+        .whenAnyRequest
+        .thenRespondCyclicResponses(
+          Response("error", StatusCode.InternalServerError, "Something went wrong"),
+          Response("error", StatusCode.InternalServerError, "Something went wrong"),
+          Response("error", StatusCode.InternalServerError, "Something went wrong"),
+          Response("error", StatusCode.InternalServerError, "Something went wrong")
+        )
+
+      val dispatcher = Dispatcher.sttp(config, backend)
+
+      val error = intercept[SinkError] {
+        dispatcher.send(Map("Content-Type" -> "application/json"), "{\"foo\":\"bar\"}")
+      }
+
+      error.message must be ("reached the maximum number of times to retry on errors before failing the task")
     }
   }
 }
