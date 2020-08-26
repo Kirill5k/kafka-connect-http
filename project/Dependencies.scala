@@ -5,8 +5,8 @@ object Dependencies {
   object Versions {
     lazy val kafka     = "2.5.0"
     lazy val confluent = "5.5.0"
-    lazy val scalaj    = "2.4.2"
     lazy val circe     = "0.13.0"
+    lazy val sttp      = "2.2.5"
 
     lazy val scalatest  = "3.2.0"
     lazy val mockito    = "1.14.0"
