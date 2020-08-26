@@ -6,12 +6,14 @@ import io.circe.generic.auto._
 import io.circe.parser._
 import io.kirill.kafka.connect.http.sink.HttpSinkConfig
 import io.kirill.kafka.connect.http.sink.authenticator.Oauth2Authenticator.AuthToken
-import io.kirill.kafka.connect.http.sink.errors.{AuthError, JsonParsingError}
-import sttp.client.{Identity, NothingT, SttpBackend, UriContext, basicRequest}
+import io.kirill.kafka.connect.http.sink.errors.{AuthError, HttpClientError, JsonParsingError}
+import sttp.client.{NothingT, SttpBackend, UriContext, basicRequest}
+
+import scala.util.{Failure, Success, Try}
 
 private[authenticator] final class Oauth2Authenticator(
     private val conf: HttpSinkConfig,
-    private val backend: SttpBackend[Identity, Nothing, NothingT],
+    private val backend: SttpBackend[Try, Nothing, NothingT],
     private var authToken: AuthToken = AuthToken("expired", -1)
 ) extends Authenticator {
   import Oauth2Authenticator._
@@ -30,18 +32,26 @@ private[authenticator] final class Oauth2Authenticator(
   )
 
   private def refreshToken(): Unit = {
-    val response = backend.send(basicRequest
-      .header("Content-Type", "application/x-www-form-urlencoded")
-      .auth.basic(conf.oauth2ClientId, conf.oauth2ClientSecret)
-      .post(uri"${conf.oauth2TokenUrl}")
-      .body(requestBody))
+    val response = backend.send(
+      basicRequest
+        .header("Content-Type", "application/x-www-form-urlencoded")
+        .auth
+        .basic(conf.oauth2ClientId, conf.oauth2ClientSecret)
+        .post(uri"${conf.oauth2TokenUrl}")
+        .body(requestBody)
+    )
 
-    response.body match {
-      case Right(json) =>
-        val accessToken = decode[AccessTokenResponse](json).getOrElse(throw JsonParsingError(json))
-        authToken = AuthToken(accessToken.access_token, accessToken.expires_in)
-      case Left(error) =>
-        throw AuthError(s"error obtaining auth token. $error")
+    response match {
+      case Success(res) =>
+        res.body match {
+          case Right(json) =>
+            val accessToken = decode[AccessTokenResponse](json).getOrElse(throw JsonParsingError(json))
+            authToken = AuthToken(accessToken.access_token, accessToken.expires_in)
+          case Left(error) =>
+            throw AuthError(s"error obtaining auth token. $error")
+        }
+      case Failure(exception) =>
+        throw HttpClientError(exception.getMessage)
     }
   }
 }

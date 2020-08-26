@@ -4,9 +4,12 @@ import io.kirill.kafka.connect.http.sink.HttpSinkConfig
 import io.kirill.kafka.connect.http.sink.errors.SinkError
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import sttp.client.monad.TryMonad
 import sttp.client.testing.SttpBackendStub
-import sttp.client.{Response, StringBody}
+import sttp.client.{NothingT, Response, StringBody}
 import sttp.model.{Header, Method, StatusCode}
+
+import scala.util.Try
 
 class DispatcherSpec extends AnyWordSpec with Matchers {
 
@@ -22,7 +25,7 @@ class DispatcherSpec extends AnyWordSpec with Matchers {
   "A LiveDispatcher" should {
 
     "send http request" in {
-      val backend = SttpBackendStub.synchronous
+      val backend = SttpBackendStub[Try, Nothing, NothingT](TryMonad)
         .whenRequestMatches { r =>
           r.method == Method.PUT &&
             r.headers.contains(Header("Content-Type", "application/json"))
@@ -36,7 +39,7 @@ class DispatcherSpec extends AnyWordSpec with Matchers {
     }
 
     "retry on failed attempt" in {
-      val backend = SttpBackendStub.synchronous
+      val backend = SttpBackendStub[Try, Nothing, NothingT](TryMonad)
         .whenAnyRequest
         .thenRespondCyclicResponses(
           Response("error", StatusCode.InternalServerError, "Something went wrong"),
@@ -50,7 +53,7 @@ class DispatcherSpec extends AnyWordSpec with Matchers {
     }
 
     "thrown an exception when number of retries is greater than max" in {
-      val backend = SttpBackendStub.synchronous
+      val backend = SttpBackendStub[Try, Nothing, NothingT](TryMonad)
         .whenAnyRequest
         .thenRespondCyclicResponses(
           Response("error", StatusCode.InternalServerError, "Something went wrong"),

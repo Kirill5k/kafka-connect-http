@@ -1,14 +1,18 @@
 package io.kirill.kafka.connect.http.sink.authenticator
 
+import cats.MonadError
 import io.kirill.kafka.connect.http.sink.HttpSinkConfig
 import io.kirill.kafka.connect.http.sink.authenticator.Oauth2Authenticator.AuthToken
-import io.kirill.kafka.connect.http.sink.errors.{AuthError, JsonParsingError}
+import io.kirill.kafka.connect.http.sink.errors.{AuthError, HttpClientError, JsonParsingError}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import sttp.client.monad.TryMonad
 import sttp.client.testing.SttpBackendStub
-import sttp.client.{Response, StringBody, SttpClientException}
+import sttp.client.{NothingT, Response, StringBody, SttpClientException, TryHttpURLConnectionBackend}
 import sttp.model.{Header, Method, StatusCode}
+
+import scala.util.Try
 
 class Oauth2AuthenticatorSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
@@ -26,7 +30,7 @@ class Oauth2AuthenticatorSpec extends AnyWordSpec with Matchers with BeforeAndAf
   "An Oauth2Authenticator" should {
 
     "return auth header if token is still valid" in {
-      val backend = SttpBackendStub.synchronous
+      val backend = SttpBackendStub[Try, Nothing, NothingT](TryMonad)
         .whenAnyRequest
         .thenRespond(throw new SttpClientException.ConnectException(new RuntimeException))
 
@@ -37,7 +41,7 @@ class Oauth2AuthenticatorSpec extends AnyWordSpec with Matchers with BeforeAndAf
     }
 
     "obtain new access token if current auth token has expire" in {
-      val backend = SttpBackendStub.synchronous
+      val backend = SttpBackendStub[Try, Nothing, NothingT](TryMonad)
         .whenRequestMatches { r =>
           r.method == Method.POST &&
             r.headers.contains(Header("Content-Type", "application/x-www-form-urlencoded")) &&
@@ -53,7 +57,7 @@ class Oauth2AuthenticatorSpec extends AnyWordSpec with Matchers with BeforeAndAf
     }
 
     "throw parsing error when unexpected response returned" in {
-      val backend = SttpBackendStub.synchronous
+      val backend = SttpBackendStub[Try, Nothing, NothingT](TryMonad)
         .whenAnyRequest
         .thenRespond("""{"foo": "bar"}""")
 
@@ -66,7 +70,7 @@ class Oauth2AuthenticatorSpec extends AnyWordSpec with Matchers with BeforeAndAf
     }
 
     "throw auth error when fail response returned" in {
-      val backend = SttpBackendStub.synchronous
+      val backend = SttpBackendStub[Try, Nothing, NothingT](TryMonad)
         .whenAnyRequest
         .thenRespond(Response("error-message", StatusCode.InternalServerError))
 
@@ -80,19 +84,19 @@ class Oauth2AuthenticatorSpec extends AnyWordSpec with Matchers with BeforeAndAf
       error.message must be ("error obtaining auth token. error-message")
     }
 
-    "throw auth error when request fails" in {
-      val backend = SttpBackendStub.synchronous
+    "throw http client error when request fails" in {
+      val backend = SttpBackendStub[Try, Nothing, NothingT](TryMonad)
         .whenAnyRequest
-        .thenRespond(throw new SttpClientException.ConnectException(new RuntimeException))
+        .thenRespond(throw new SttpClientException.ConnectException(new RuntimeException("runtime error")))
 
       val authToken     = AuthToken("valid-token", -1)
       val authenticator = new Oauth2Authenticator(config, backend, authToken)
 
-      val error = intercept[AuthError] {
+      val error = intercept[HttpClientError] {
         authenticator.authHeader()
       }
 
-      error.message must be ("error obtaining auth token. error-message")
+      error.message must be ("java.lang.RuntimeException: runtime error")
     }
   }
 }
