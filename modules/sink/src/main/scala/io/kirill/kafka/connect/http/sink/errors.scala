@@ -7,6 +7,8 @@ object errors {
     override def getMessage: String = message
   }
 
+  final case class HttpClientError(message: String) extends SinkError
+
   final case class AuthError(message: String) extends SinkError
 
   final case class JsonParsingError(json: String) extends SinkError {

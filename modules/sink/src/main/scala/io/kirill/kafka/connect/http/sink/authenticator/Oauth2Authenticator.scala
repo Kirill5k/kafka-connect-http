@@ -7,10 +7,11 @@ import io.circe.parser._
 import io.kirill.kafka.connect.http.sink.HttpSinkConfig
 import io.kirill.kafka.connect.http.sink.authenticator.Oauth2Authenticator.AuthToken
 import io.kirill.kafka.connect.http.sink.errors.{AuthError, JsonParsingError}
-import scalaj.http.Http
+import sttp.client.{Identity, NothingT, SttpBackend, UriContext, basicRequest}
 
 private[authenticator] final class Oauth2Authenticator(
     private val conf: HttpSinkConfig,
+    private val backend: SttpBackend[Identity, Nothing, NothingT],
     private var authToken: AuthToken = AuthToken("expired", -1)
 ) extends Authenticator {
   import Oauth2Authenticator._
@@ -22,25 +23,25 @@ private[authenticator] final class Oauth2Authenticator(
     s"Bearer ${authToken.token}"
   }
 
-  private val requestBody = List(
+  private val requestBody = Map(
     "client_id"     -> conf.oauth2ClientId,
     "client_secret" -> conf.oauth2ClientSecret,
     "grant_type"    -> "client_credentials"
   )
 
   private def refreshToken(): Unit = {
-    val response = Http(conf.oauth2TokenUrl)
+    val response = backend.send(basicRequest
       .header("Content-Type", "application/x-www-form-urlencoded")
-      .auth(conf.oauth2ClientId, conf.oauth2ClientSecret)
-      .postForm(requestBody)
-      .asString
+      .auth.basic(conf.oauth2ClientId, conf.oauth2ClientSecret)
+      .post(uri"${conf.oauth2TokenUrl}")
+      .body(requestBody))
 
-    if (response.isSuccess) {
-      val json        = response.body
-      val accessToken = decode[AccessTokenResponse](json).getOrElse(throw JsonParsingError(json))
-      authToken = AuthToken(accessToken.access_token, accessToken.expires_in)
-    } else {
-      throw AuthError(s"error obtaining auth token. ${response.code}: ${response.body}")
+    response.body match {
+      case Right(json) =>
+        val accessToken = decode[AccessTokenResponse](json).getOrElse(throw JsonParsingError(json))
+        authToken = AuthToken(accessToken.access_token, accessToken.expires_in)
+      case Left(error) =>
+        throw AuthError(s"error obtaining auth token. ${error}")
     }
   }
 }

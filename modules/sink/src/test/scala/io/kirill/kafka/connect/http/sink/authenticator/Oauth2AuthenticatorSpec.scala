@@ -9,8 +9,11 @@ import org.mockserver.model.HttpResponse.response
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import sttp.client.HttpURLConnectionBackend
 
 class Oauth2AuthenticatorSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll {
+
+  val backend = HttpURLConnectionBackend()
 
   val config = HttpSinkConfig(
     Map(
@@ -27,7 +30,7 @@ class Oauth2AuthenticatorSpec extends AnyWordSpec with Matchers with BeforeAndAf
 
     "return auth header if token is still valid" in withMockserver { server =>
       val authToken     = AuthToken("valid-token", 1000)
-      val authenticator = new Oauth2Authenticator(config, authToken)
+      val authenticator = new Oauth2Authenticator(config, backend, authToken)
 
       authenticator.authHeader() must be("Bearer valid-token")
       server.verifyZeroInteractions()
@@ -41,7 +44,7 @@ class Oauth2AuthenticatorSpec extends AnyWordSpec with Matchers with BeforeAndAf
             |""".stripMargin))
 
       val authToken     = AuthToken("expired-token", 0)
-      val authenticator = new Oauth2Authenticator(config, authToken)
+      val authenticator = new Oauth2Authenticator(config, backend, authToken)
 
       authenticator.authHeader() must be("Bearer new-token")
 
@@ -59,7 +62,7 @@ class Oauth2AuthenticatorSpec extends AnyWordSpec with Matchers with BeforeAndAf
         .respond(response().withBody(s"""{"foo": "bar"}""".stripMargin))
 
       val authToken     = AuthToken("expired-token", 0)
-      val authenticator = new Oauth2Authenticator(config, authToken)
+      val authenticator = new Oauth2Authenticator(config, backend, authToken)
 
       assertThrows[JsonParsingError] {
         authenticator.authHeader()
@@ -72,7 +75,7 @@ class Oauth2AuthenticatorSpec extends AnyWordSpec with Matchers with BeforeAndAf
         .respond(response().withBody(s"""{"error": "invalid client id"}""".stripMargin).withStatusCode(401))
 
       val authToken     = AuthToken("expired-token", 0)
-      val authenticator = new Oauth2Authenticator(config, authToken)
+      val authenticator = new Oauth2Authenticator(config, backend, authToken)
 
       assertThrows[AuthError] {
         authenticator.authHeader()
