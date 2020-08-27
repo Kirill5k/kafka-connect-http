@@ -7,11 +7,9 @@ import org.mockito.scalatest.MockitoSugar
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import scala.concurrent.ExecutionContext
 import scala.jdk.CollectionConverters._
 
 class HttpSinkTaskTestSpec extends AnyWordSpec with Matchers with MockitoSugar {
-  implicit val ec = scala.concurrent.ExecutionContext.global
 
   "A HttpSinkTask" should {
 
@@ -32,7 +30,7 @@ class HttpSinkTaskTestSpec extends AnyWordSpec with Matchers with MockitoSugar {
       val records = List(new SinkRecord("topic", 0, null, null, null, "value", 0))
       task.put(records.asJava)
 
-      verify(writerMock).put(eqTo(records))(any[ExecutionContext])
+      verify(writerMock).put(eqTo(records))
     }
 
     "put when null value" in {
@@ -43,7 +41,7 @@ class HttpSinkTaskTestSpec extends AnyWordSpec with Matchers with MockitoSugar {
       val records = List(new SinkRecord("topic", 0, null, null, null, null, 0))
       task.put(records.asJava)
 
-      verify(writerMock, never).put(any[List[SinkRecord]])(any[ExecutionContext])
+      verify(writerMock, never).put(any[List[SinkRecord]])
     }
 
     "flush" in {

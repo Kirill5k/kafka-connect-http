@@ -2,24 +2,25 @@ package io.kirill.kafka.connect.http.sink
 
 import java.time.Instant
 
-import io.kirill.kafka.connect.http.sink.errors.MaxAmountOfRetriesReached
+import io.kirill.kafka.connect.http.sink.authenticator.Authenticator
+import io.kirill.kafka.connect.http.sink.dispatcher.Dispatcher
 import org.apache.kafka.connect.sink.SinkRecord
-import scalaj.http.{Http, HttpResponse}
+import sttp.client.TryHttpURLConnectionBackend
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
+class HttpWriter(
+    private val config: HttpSinkConfig,
+    private val dispatcher: Dispatcher,
+    private val authenticator: Option[Authenticator]
+) extends Logging {
 
-class HttpWriter(val conf: HttpSinkConfig) extends Logging {
+  var currentBatch: List[SinkRecord] = List()
+  var time: Long                     = Instant.now.toEpochMilli
 
-  var currentBatch: Seq[SinkRecord] = List()
-  var failedAttempts: Int           = 0
-  var time: Long                    = Instant.now.toEpochMilli
-
-  def put(records: Seq[SinkRecord])(implicit ec: ExecutionContext): Unit = {
+  def put(records: List[SinkRecord]): Unit = {
     val currentTime = Instant.now().toEpochMilli
-    if (currentBatch.size + records.size >= conf.batchSize || currentTime - time >= conf.batchIntervalMs) {
+    if (currentBatch.size + records.size >= config.batchSize || currentTime - time >= config.batchIntervalMs) {
       time = currentTime
-      val (batch, remaining) = (currentBatch ++ records).splitAt(conf.batchSize)
+      val (batch, remaining) = (currentBatch ++ records).splitAt(config.batchSize)
       sendBatch(batch)
       if (remaining.nonEmpty) {
         put(remaining)
@@ -29,45 +30,19 @@ class HttpWriter(val conf: HttpSinkConfig) extends Logging {
     }
   }
 
-  def flush(implicit ec: ExecutionContext): Unit = {
+  def flush(): Unit = {
     sendBatch(currentBatch)
     currentBatch = List()
   }
 
-  private def sendBatch(records: Seq[SinkRecord])(implicit ec: ExecutionContext): Unit =
-    dispatch(records).onComplete {
-      case Success(_)         => logger.info("successfully sent request")
-      case Failure(exception) => throw exception
-    }
-
-  private def dispatch(records: Seq[SinkRecord])(implicit ec: ExecutionContext): Future[Unit] =
-    Future(HttpWriter.formatRecords(conf, records))
-      .map(req => HttpWriter.sendRequest(conf, req))
-      .flatMap { res =>
-        if (res.is2xx) Future.successful(())
-        else
-          Future(logger.error(s"error sending records batch. code - ${res.code}. response - ${res.body}"))
-            .flatMap(_ => retry(records))
-      }
-
-  private def retry(records: Seq[SinkRecord])(implicit ec: ExecutionContext): Future[Unit] = {
-    failedAttempts += 1
-    if (failedAttempts <= conf.maxRetries) {
-      Future(Thread.sleep(conf.retryBackoff)).flatMap(_ => dispatch(records))
-    } else {
-      Future.failed(MaxAmountOfRetriesReached)
-    }
+  private def sendBatch(records: List[SinkRecord]): Unit = {
+    val body    = HttpWriter.formatRecords(config, records)
+    val headers = authenticator.fold(config.httpHeaders)(a => config.httpHeaders + ("Authorization" -> a.authHeader()))
+    dispatcher.send(headers, body)
   }
 }
 
 object HttpWriter {
-
-  def sendRequest(conf: HttpSinkConfig, body: String): HttpResponse[String] =
-    Http(conf.httpApiUrl)
-      .postData(body)
-      .method(conf.httpRequestMethod)
-      .headers(conf.httpHeaders)
-      .asString
 
   def formatRecords(conf: HttpSinkConfig, records: Seq[SinkRecord]): String = {
     val regexReplacements = conf.regexPatterns.zip(conf.regexReplacements)
@@ -79,5 +54,13 @@ object HttpWriter {
     records.map(formatRecord).mkString(conf.batchPrefix, conf.batchSeparator, conf.batchSuffix)
   }
 
-  def apply(conf: HttpSinkConfig): HttpWriter = new HttpWriter(conf)
+  def make(config: HttpSinkConfig): HttpWriter = {
+    val backend = TryHttpURLConnectionBackend()
+    val dispatcher = Dispatcher.sttp(config, backend)
+    val authenticator = config.authType match {
+      case "oauth2" => Some(Authenticator.oauth2(config, backend))
+      case _ => None
+    }
+    new HttpWriter(config, dispatcher, authenticator)
+  }
 }
