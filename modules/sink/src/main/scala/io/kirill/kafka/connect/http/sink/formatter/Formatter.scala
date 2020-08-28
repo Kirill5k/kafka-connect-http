@@ -24,3 +24,9 @@ final class RegexFormatter(
       .map(formatRecord)
       .mkString(config.batchPrefix, config.batchSeparator, config.batchSuffix)
 }
+
+object Formatter {
+
+  def regexBased(config: HttpSinkConfig): Formatter =
+    new RegexFormatter(config)
+}
