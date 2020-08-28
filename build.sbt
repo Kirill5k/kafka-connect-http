@@ -18,7 +18,7 @@ lazy val root = (project in file("."))
   )
   .aggregate(sink)
 
-lazy val sink = (project in file("modules/sink"))
+lazy val sink = (project in file("connectors/sink"))
   .enablePlugins(BuildInfoPlugin)
   .settings(
     name := "kafka-connect-http-sink",

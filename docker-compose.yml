@@ -48,18 +48,37 @@ services:
   kafka-connect:
     container_name: kafka-connect
     build:
-      context: modules/sink
+      context: kafka-connect
     depends_on:
-      - zookeeper
       - kafka
+      - zookeeper
+      - schemaregistry
     ports:
       - 8083:8083
+    environment:
+      CONNECT_BOOTSTRAP_SERVERS: "kafka:9092"
+      CONNECT_GROUP_ID: connect-cluster
+      CONNECT_OFFSET_STORAGE_TOPIC: connect-offsets
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_CONFIG_STORAGE_TOPIC: connect-configs
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_STATUS_STORAGE_TOPIC: connect-status
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_OFFSET_FLUSH_INTERVAL_MS: 10000
+      CONNECT_REST_PORT: 8083
+      CONNECT_REST_ADVERTISED_PORT: 8083
+      CONNECT_REST_ADVERTISED_HOST_NAME: kafka-connect
 
-  connect-http-sink-jobs:
-    container_name: connect-http-sink-jobs
+  kafka-connect-jobs:
+    container_name: kafka-connect-jobs
     build: jobs/sink
+    environment:
+      environment: local
+      KAFKA_CONNECT_URL: "http://kafka-connect:8083"
+      KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+      SCHEMA_REGISTRY_URL: "http://schemaregistry:8081"
     depends_on:
-      - connect-http-sink
+      - kafka-connect
 
   kafka-connect-ui:
     container_name: kafka-connect-ui
@@ -69,8 +88,8 @@ services:
     ports:
       - 8000:8000
 
-  kafka-web-view:
-    container_name: kafka-web-view
+  kafka-ui:
+    container_name: kafka-ui
     image: obsidiandynamics/kafdrop
     environment:
       - KAFKA_BROKERCONNECT=kafka:9092
