@@ -4,12 +4,14 @@ import java.time.Instant
 
 import io.kirill.kafka.connect.http.sink.authenticator.Authenticator
 import io.kirill.kafka.connect.http.sink.dispatcher.Dispatcher
+import io.kirill.kafka.connect.http.sink.formatter.Formatter
 import org.apache.kafka.connect.sink.SinkRecord
 import sttp.client.TryHttpURLConnectionBackend
 
 class HttpWriter(
     private val config: HttpSinkConfig,
     private val dispatcher: Dispatcher,
+    private val formatter: Formatter,
     private val authenticator: Option[Authenticator]
 ) extends Logging {
 
@@ -36,7 +38,7 @@ class HttpWriter(
   }
 
   private def sendBatch(records: List[SinkRecord]): Unit = {
-    val body    = HttpWriter.formatRecords(config, records)
+    val body    = formatter.toJson(records)
     val headers = authenticator.fold(config.httpHeaders)(a => config.httpHeaders + ("Authorization" -> a.authHeader()))
     dispatcher.send(headers, body)
   }
@@ -44,23 +46,14 @@ class HttpWriter(
 
 object HttpWriter {
 
-  def formatRecords(conf: HttpSinkConfig, records: Seq[SinkRecord]): String = {
-    val regexReplacements = conf.regexPatterns.zip(conf.regexReplacements)
-    val formatRecord: SinkRecord => String = rec =>
-      regexReplacements.foldLeft(rec.value().toString) {
-        case (res, (regex, replacement)) => res.replaceAll(regex, replacement)
-      }
-
-    records.map(formatRecord).mkString(conf.batchPrefix, conf.batchSeparator, conf.batchSuffix)
-  }
-
   def make(config: HttpSinkConfig): HttpWriter = {
     val backend = TryHttpURLConnectionBackend()
     val dispatcher = Dispatcher.sttp(config, backend)
+    val formatter = Formatter.regexBased(config)
     val authenticator = config.authType match {
       case "oauth2" => Some(Authenticator.oauth2(config, backend))
       case _ => None
     }
-    new HttpWriter(config, dispatcher, authenticator)
+    new HttpWriter(config, dispatcher, formatter, authenticator)
   }
 }
