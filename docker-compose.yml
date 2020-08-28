@@ -45,8 +45,8 @@ services:
     ports:
       - 8081:8081
 
-  connect-http-sink:
-    container_name: connect-http-sink
+  kafka-connect:
+    container_name: kafka-connect
     build:
       context: modules/sink
     depends_on:
@@ -60,6 +60,14 @@ services:
     build: jobs/sink
     depends_on:
       - connect-http-sink
+
+  kafka-connect-ui:
+    container_name: kafka-connect-ui
+    image: landoop/kafka-connect-ui
+    environment:
+      - CONNECT_URL=http://kafka-connect:8083
+    ports:
+      - 8000:8000
 
   kafka-web-view:
     container_name: kafka-web-view
