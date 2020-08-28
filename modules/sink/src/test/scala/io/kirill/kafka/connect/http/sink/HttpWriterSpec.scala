@@ -25,8 +25,7 @@ class HttpWriterSpec extends AnyWordSpec with Matchers with MockitoSugar {
     "add records into a batch" in {
       val config = HttpSinkConfig(Map(
         "http.api.url" -> "http://localhost:12345/events",
-        "batch.size" -> "5",
-        "http.headers" -> "content-type:application/json|accept:application/json"
+        "batch.size" -> "5"
       ))
 
       val (authenticator, dispatcher, formatter) = mocks
@@ -77,13 +76,14 @@ class HttpWriterSpec extends AnyWordSpec with Matchers with MockitoSugar {
 
       writer.currentBatch must be (Nil)
 
+      verify(formatter).toJson(records)
       verify(dispatcher).send(Map("content-type" -> "application/json"), json)
     }
 
     "flush records" in {
       val config = HttpSinkConfig(Map(
         "http.api.url" -> "http://localhost:12345/events",
-        "batch.size" -> "1",
+        "batch.size" -> "5",
         "http.headers" -> "content-type:application/json"
       ))
 
@@ -92,7 +92,7 @@ class HttpWriterSpec extends AnyWordSpec with Matchers with MockitoSugar {
       val writer = new HttpWriter(config, dispatcher, formatter, None)
 
       writer.currentBatch = records
-      writer.flush
+      writer.flush()
 
       writer.currentBatch must be (Nil)
 
