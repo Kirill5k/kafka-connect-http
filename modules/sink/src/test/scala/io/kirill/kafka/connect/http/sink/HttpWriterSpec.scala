@@ -5,7 +5,6 @@ import java.time.Instant
 import io.kirill.kafka.connect.http.sink.authenticator.Authenticator
 import io.kirill.kafka.connect.http.sink.dispatcher.Dispatcher
 import io.kirill.kafka.connect.http.sink.formatter.Formatter
-import org.apache.kafka.connect.data.{Schema, SchemaBuilder, Struct}
 import org.apache.kafka.connect.sink.SinkRecord
 import org.mockito.scalatest.MockitoSugar
 import org.scalatest.matchers.must.Matchers
