@@ -21,3 +21,7 @@ The kafka connect http sink connector consumes records from the specified kafka 
 |`regex.patterns`| Character separated regex patterns to match for replacement in the destination messages|
 |`regex.replacements`| Character separated regex replacements to use with the patterns in regex.patterns|
 |`regex.separator`| Separator character used in regex.patterns and regex.replacements property|
+|`auth.type`| HTTP authentication type. current supported options are oauth2 |
+|`auth.oauth2.client.id`| Oauth2 client id |
+|`auth.oauth2.client.secret`| Oauth2 client secret |
+|`auth.oauth2.token.url`| The target endpoint for generating the access token |
