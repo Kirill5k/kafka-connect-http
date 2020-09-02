@@ -1,15 +1,23 @@
 #!/bin/bash
 
-while [[ "$(curl -s -o /dev/null -w ''%http_code'' connect-http-sink:8083)" != "200" ]]; do sleep 3; done
+: ${KAFKA_CONNECT_URL?"Mandatory environment variable KAFKA_CONNECT_URL is not set"}
+: ${KAFKA_BOOTSTRAP_SERVERS?"Mandatory environment variable KAFKA_BOOTSTRAP_SERVERS is not set"}
+: ${SCHEMA_REGISTRY_URL?"Mandatory environment variable SCHEMA_REGISTRY_URL is not set"}
 
-echo "connect-http-sink is ready"
+echo "Kafka connect's URL is $KAFKA_CONNECT_URL."
 
-rm -rf /opt/job-configs
-mkdir -p /opt/job-configs
-cp /opt/job-config-templates/* /opt/job-configs
+echo "This is what a curl to Kafka Connect looks like"
+curl $KAFKA_CONNECT_URL
 
-for config_file_name in /opt/job-configs/*.json; do
-  echo "submitting job ${config_file_name}"
-  curl -X POST -H "Content-Type: application/json" --data "@${config_file_name}" http://connect-http-sink:8083/connectors | jq .
-  echo "job ${config_file_name} has been submitted"
+while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' $KAFKA_CONNECT_URL)" != "200" ]]; do
+  echo "Waiting for Kafka Connect to be ready..."
+  sleep 3
+done
+
+echo "Kafka Connect is ready."
+
+for filename in /opt/connector-config-templates/*.json; do
+  echo "Submitting job ${filename}"
+  ./submit-job.sh "${filename}"
+  echo "Finished submitting job ${filename}"
 done

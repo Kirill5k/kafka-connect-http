@@ -2,7 +2,7 @@
   "name": "http-sink-job-1",
   "config": {
     "connector.class": "io.kirill.kafka.connect.http.sink.HttpSinkConnector",
-    "tasks.max": "20",
+    "tasks.max": "2",
     "topics": "test-kafka-topic",
 
     "key.converter": "org.apache.kafka.connect.storage.StringConverter",
