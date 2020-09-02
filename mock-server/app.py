@@ -54,9 +54,9 @@ def getAllStats():
   return jsonify(stats)
 
 
-def count_events(received_data):
+def count_events(req):
   try:
-    return len(json.loads(gzip.decompress(received_data)))
+    return len(req.get_json(force=True))
   except:
     print('error counting received events', file=sys.stderr)
     return 0
@@ -76,7 +76,7 @@ def postData(key):
     stats[key] = {"requests": 0, "events": 0}
 
   stats[key]["requests"] += 1
-  stats[key]["events"] += count_events(request.data)
+  stats[key]["events"] += count_events(req)
 
   time.sleep(random.randint(0, 1000) / 1000.0)
 
