@@ -76,7 +76,7 @@ def postData(key):
     stats[key] = {"requests": 0, "events": 0}
 
   stats[key]["requests"] += 1
-  stats[key]["events"] += count_events(req)
+  stats[key]["events"] += count_events(request)
 
   time.sleep(random.randint(0, 1000) / 1000.0)
 
