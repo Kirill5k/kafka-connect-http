@@ -99,3 +99,9 @@ services:
       - schemaregistry
     ports:
       - 9000:9000
+
+  mock-server:
+    container_name: mock-server
+    build: mock-server
+    ports:
+      - 8084:8084

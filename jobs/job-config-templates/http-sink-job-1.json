@@ -13,7 +13,7 @@
     "enhanced.avro.schema.support": "true",
     "specific.avro.reader": "true",
 
-    "http.api.url": "http://foo.bar",
+    "http.api.url": "http://mock-server:8084/data/job-1?auth=oauth2",
     "http.request.method": "POST",
     "http.headers": "content-type:application/json|accept:application/json",
     "headers.separator": "\\|",
@@ -25,6 +25,10 @@
     "retry.backoff.ms": "1000",
     "regex.patterns": ",~=~Struct\\{~\\}",
     "regex.replacements": "\",\"~\":\"~{\"~\"}",
-    "regex.separator": "~"
+    "regex.separator": "~",
+    "auth.type": "oauth2",
+    "auth.oauth2.client.id": "mock-server-client-id",
+    "auth.oauth2.client.secret": "mock-server-client-secret",
+    "auth.oauth2.token.url": "http://mock-server:8084/token"
   }
 }
