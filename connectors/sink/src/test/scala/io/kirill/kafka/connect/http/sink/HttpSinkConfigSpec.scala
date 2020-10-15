@@ -39,24 +39,24 @@ class HttpSinkConfigSpec extends AnyWordSpec with Matchers {
 
     "set correct props" in {
       val props = Map(
-        "http.api.url"        -> "http://foo.bar",
-        "http.request.method" -> "PUT",
-        "http.headers"        -> "content-type:application/json|accept:application/json",
-        "headers.separator"   -> "\\|",
-        "batch.size"          -> "100",
-        "batch.interval.ms"   -> "100",
-        "batch.prefix"        -> "[",
-        "batch.suffix"        -> "]",
-        "batch.separator"     -> ";",
-        "max.retries"         -> "3",
-        "retry.backoff.ms"    -> "10",
-        "regex.patterns"      -> "^foo~bar$",
-        "regex.replacements"  -> "bar~foo",
-        "regex.separator"     -> "~",
-        "auth.type"           -> "oauth2",
-        "auth.oauth2.client.id"      -> "client-id",
-        "auth.oauth2.client.secret"  -> "client-secret",
-        "auth.oauth2.token.url"      -> "http://foo.bar/token"
+        "http.api.url"              -> "http://foo.bar",
+        "http.request.method"       -> "PUT",
+        "http.headers"              -> "content-type:application/json|accept:application/json",
+        "headers.separator"         -> "\\|",
+        "batch.size"                -> "100",
+        "batch.interval.ms"         -> "100",
+        "batch.prefix"              -> "[",
+        "batch.suffix"              -> "]",
+        "batch.separator"           -> ";",
+        "max.retries"               -> "3",
+        "retry.backoff.ms"          -> "10",
+        "regex.patterns"            -> "^foo~bar$",
+        "regex.replacements"        -> "bar~foo",
+        "regex.separator"           -> "~",
+        "auth.type"                 -> "oauth2",
+        "auth.oauth2.client.id"     -> "client-id",
+        "auth.oauth2.client.secret" -> "client-secret",
+        "auth.oauth2.token.url"     -> "http://foo.bar/token"
       )
 
       val config = new HttpSinkConfig(props.asJava)
@@ -65,7 +65,7 @@ class HttpSinkConfigSpec extends AnyWordSpec with Matchers {
       config.httpRequestMethod must be("PUT")
       config.httpHeaders must be(Map("content-type" -> "application/json", "accept" -> "application/json"))
       config.batchSize must be(100)
-      config.batchIntervalMs must be (100)
+      config.batchIntervalMs must be(100)
       config.batchPrefix must be("[")
       config.batchSuffix must be("]")
       config.batchSeparator must be(";")

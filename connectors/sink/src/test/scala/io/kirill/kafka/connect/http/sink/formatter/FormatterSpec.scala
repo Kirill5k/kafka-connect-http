@@ -10,15 +10,17 @@ class FormatterSpec extends AnyWordSpec with Matchers {
   "A RegexFormatter" should {
 
     "convert records to a json string based on regex" in {
-      val config = HttpSinkConfig(Map(
-        "http.api.url" -> "http://localhost:8080/events",
-        "retry.backoff.ms" -> "10",
-        "regex.patterns" -> ",~=~Struct\\{~\\}",
-        "regex.replacements" -> "\",\"~\":\"~{\"~\"}",
-        "batch.prefix" -> "[",
-        "batch.suffix" -> "]",
-        "atch.separator" -> ","
-      ))
+      val config = HttpSinkConfig(
+        Map(
+          "http.api.url"       -> "http://localhost:8080/events",
+          "retry.backoff.ms"   -> "10",
+          "regex.patterns"     -> ",~=~Struct\\{~\\}",
+          "regex.replacements" -> "\",\"~\":\"~{\"~\"}",
+          "batch.prefix"       -> "[",
+          "batch.suffix"       -> "]",
+          "atch.separator"     -> ","
+        )
+      )
 
       val formatter = Formatter.regexBased(config)
 

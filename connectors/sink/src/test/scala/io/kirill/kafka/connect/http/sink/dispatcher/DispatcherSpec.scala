@@ -15,10 +15,10 @@ class DispatcherSpec extends AnyWordSpec with Matchers {
 
   val config = HttpSinkConfig(
     Map(
-      "http.api.url" -> "http://localhost:8080/data",
+      "http.api.url"        -> "http://localhost:8080/data",
       "http.request.method" -> "PUT",
-      "max.retries" -> "4",
-      "retry.backoff.ms" -> "0"
+      "max.retries"         -> "4",
+      "retry.backoff.ms"    -> "0"
     )
   )
 
@@ -28,8 +28,8 @@ class DispatcherSpec extends AnyWordSpec with Matchers {
       val backend = SttpBackendStub[Try, Nothing, NothingT](TryMonad)
         .whenRequestMatches { r =>
           r.method == Method.PUT &&
-            r.headers.contains(Header("Content-Type", "application/json"))
-            r.body.asInstanceOf[StringBody].s == "{\"foo\":\"bar\"}"
+          r.headers.contains(Header("Content-Type", "application/json"))
+          r.body.asInstanceOf[StringBody].s == "{\"foo\":\"bar\"}"
         }
         .thenRespond(Response.ok("ok"))
 
@@ -39,8 +39,7 @@ class DispatcherSpec extends AnyWordSpec with Matchers {
     }
 
     "retry on failed attempt" in {
-      val backend = SttpBackendStub[Try, Nothing, NothingT](TryMonad)
-        .whenAnyRequest
+      val backend = SttpBackendStub[Try, Nothing, NothingT](TryMonad).whenAnyRequest
         .thenRespondCyclicResponses(
           Response("error", StatusCode.InternalServerError, "Something went wrong"),
           Response("error", StatusCode.InternalServerError, "Something went wrong"),
@@ -53,8 +52,7 @@ class DispatcherSpec extends AnyWordSpec with Matchers {
     }
 
     "thrown an exception when number of retries is greater than max" in {
-      val backend = SttpBackendStub[Try, Nothing, NothingT](TryMonad)
-        .whenAnyRequest
+      val backend = SttpBackendStub[Try, Nothing, NothingT](TryMonad).whenAnyRequest
         .thenRespondCyclicResponses(
           Response("error", StatusCode.InternalServerError, "Something went wrong"),
           Response("error", StatusCode.InternalServerError, "Something went wrong"),
@@ -68,7 +66,7 @@ class DispatcherSpec extends AnyWordSpec with Matchers {
         dispatcher.send(Map("Content-Type" -> "application/json"), "{\"foo\":\"bar\"}")
       }
 
-      error.message must be ("reached the maximum number of times to retry on errors before failing the task")
+      error.message must be("reached the maximum number of times to retry on errors before failing the task")
     }
   }
 }

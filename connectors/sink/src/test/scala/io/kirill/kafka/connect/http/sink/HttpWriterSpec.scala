@@ -15,34 +15,38 @@ class HttpWriterSpec extends AnyWordSpec with Matchers with MockitoSugar {
   val records = List(
     new SinkRecord("topic", 0, null, null, null, null, 0),
     new SinkRecord("topic", 0, null, null, null, null, 0),
-    new SinkRecord("topic", 0, null, null, null, null, 0),
+    new SinkRecord("topic", 0, null, null, null, null, 0)
   )
   val json = """[{"name":"John Smith","age":"21"},{"name":"John Bloggs","age":"21"}]"""
 
   "A HttpWriter" should {
 
     "add records into a batch" in {
-      val config = HttpSinkConfig(Map(
-        "http.api.url" -> "http://localhost:12345/events",
-        "batch.size" -> "5"
-      ))
+      val config = HttpSinkConfig(
+        Map(
+          "http.api.url" -> "http://localhost:12345/events",
+          "batch.size"   -> "5"
+        )
+      )
 
       val (authenticator, dispatcher, formatter) = mocks
-      val writer = new HttpWriter(config, dispatcher, formatter, Some(authenticator))
+      val writer                                 = new HttpWriter(config, dispatcher, formatter, Some(authenticator))
 
       writer.put(records)
 
-      writer.currentBatch must be (records)
+      writer.currentBatch must be(records)
 
       verifyZeroInteractions(dispatcher, authenticator, formatter)
     }
 
     "send records when batch is full until it is empty" in {
-      val config = HttpSinkConfig(Map(
-        "http.api.url" -> "http://localhost:12345/events",
-        "batch.size" -> "1",
-        "http.headers" -> "content-type:application/json|accept:application/json"
-      ))
+      val config = HttpSinkConfig(
+        Map(
+          "http.api.url" -> "http://localhost:12345/events",
+          "batch.size"   -> "1",
+          "http.headers" -> "content-type:application/json|accept:application/json"
+        )
+      )
 
       val (authenticator, dispatcher, formatter) = mocks
 
@@ -52,19 +56,28 @@ class HttpWriterSpec extends AnyWordSpec with Matchers with MockitoSugar {
 
       writer.put(records)
 
-      writer.currentBatch must be (Nil)
+      writer.currentBatch must be(Nil)
 
       verify(authenticator, times(3)).authHeader()
-      verify(dispatcher, times(3)).send(Map("content-type" -> "application/json", "accept" -> "application/json", "Authorization" -> "Basic access-token"), json)
+      verify(dispatcher, times(3)).send(
+        Map(
+          "content-type"  -> "application/json",
+          "accept"        -> "application/json",
+          "Authorization" -> "Basic access-token"
+        ),
+        json
+      )
     }
 
     "send records when timer is out" in {
-      val config = HttpSinkConfig(Map(
-        "http.api.url" -> "http://localhost:12345/events",
-        "batch.size" -> "5",
-        "batch.interval.ms" -> "100",
-        "http.headers" -> "content-type:application/json"
-      ))
+      val config = HttpSinkConfig(
+        Map(
+          "http.api.url"      -> "http://localhost:12345/events",
+          "batch.size"        -> "5",
+          "batch.interval.ms" -> "100",
+          "http.headers"      -> "content-type:application/json"
+        )
+      )
 
       val (_, dispatcher, formatter) = mocks
       when(formatter.toJson(any[List[SinkRecord]])).thenReturn(json)
@@ -73,18 +86,20 @@ class HttpWriterSpec extends AnyWordSpec with Matchers with MockitoSugar {
       writer.time = Instant.now().toEpochMilli - 1000
       writer.put(records)
 
-      writer.currentBatch must be (Nil)
+      writer.currentBatch must be(Nil)
 
       verify(formatter).toJson(records)
       verify(dispatcher).send(Map("content-type" -> "application/json"), json)
     }
 
     "flush records" in {
-      val config = HttpSinkConfig(Map(
-        "http.api.url" -> "http://localhost:12345/events",
-        "batch.size" -> "5",
-        "http.headers" -> "content-type:application/json"
-      ))
+      val config = HttpSinkConfig(
+        Map(
+          "http.api.url" -> "http://localhost:12345/events",
+          "batch.size"   -> "5",
+          "http.headers" -> "content-type:application/json"
+        )
+      )
 
       val (_, dispatcher, formatter) = mocks
       when(formatter.toJson(any[List[SinkRecord]])).thenReturn(json)
@@ -93,7 +108,7 @@ class HttpWriterSpec extends AnyWordSpec with Matchers with MockitoSugar {
       writer.currentBatch = records
       writer.flush()
 
-      writer.currentBatch must be (Nil)
+      writer.currentBatch must be(Nil)
 
       verify(formatter).toJson(records)
       verify(dispatcher).send(Map("content-type" -> "application/json"), json)

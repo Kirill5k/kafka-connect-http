@@ -30,8 +30,7 @@ class Oauth2AuthenticatorSpec extends AnyWordSpec with Matchers with BeforeAndAf
   "An Oauth2Authenticator" should {
 
     "return auth header if token is still valid" in {
-      val backend = SttpBackendStub[Try, Nothing, NothingT](TryMonad)
-        .whenAnyRequest
+      val backend = SttpBackendStub[Try, Nothing, NothingT](TryMonad).whenAnyRequest
         .thenRespond(throw new SttpClientException.ConnectException(new RuntimeException))
 
       val authToken     = AuthToken("valid-token", 1000)
@@ -44,9 +43,11 @@ class Oauth2AuthenticatorSpec extends AnyWordSpec with Matchers with BeforeAndAf
       val backend = SttpBackendStub[Try, Nothing, NothingT](TryMonad)
         .whenRequestMatches { r =>
           r.method == Method.POST &&
-            r.headers.contains(Header("Content-Type", "application/x-www-form-urlencoded")) &&
-            r.headers.contains(Header("Authorization", "Basic Y2xpZW50LWlkOmNsaWVudC1zZWNyZXQ=")) &&
-            r.body.asInstanceOf[StringBody].s == "client_id=client-id&client_secret=client-secret&grant_type=client_credentials"
+          r.headers.contains(Header("Content-Type", "application/x-www-form-urlencoded")) &&
+          r.headers.contains(Header("Authorization", "Basic Y2xpZW50LWlkOmNsaWVudC1zZWNyZXQ=")) &&
+          r.body
+            .asInstanceOf[StringBody]
+            .s == "client_id=client-id&client_secret=client-secret&grant_type=client_credentials"
         }
         .thenRespond("""{"access_token": "new-token","expires_in": 7200,"token_type": "Application Access Token"}""")
 
@@ -57,8 +58,7 @@ class Oauth2AuthenticatorSpec extends AnyWordSpec with Matchers with BeforeAndAf
     }
 
     "throw parsing error when unexpected response returned" in {
-      val backend = SttpBackendStub[Try, Nothing, NothingT](TryMonad)
-        .whenAnyRequest
+      val backend = SttpBackendStub[Try, Nothing, NothingT](TryMonad).whenAnyRequest
         .thenRespond("""{"foo": "bar"}""")
 
       val authToken     = AuthToken("expired-token", 0)
@@ -70,8 +70,7 @@ class Oauth2AuthenticatorSpec extends AnyWordSpec with Matchers with BeforeAndAf
     }
 
     "throw auth error when fail response returned" in {
-      val backend = SttpBackendStub[Try, Nothing, NothingT](TryMonad)
-        .whenAnyRequest
+      val backend = SttpBackendStub[Try, Nothing, NothingT](TryMonad).whenAnyRequest
         .thenRespond(Response("error-message", StatusCode.InternalServerError))
 
       val authToken     = AuthToken("expired-token", 0)
@@ -81,12 +80,11 @@ class Oauth2AuthenticatorSpec extends AnyWordSpec with Matchers with BeforeAndAf
         authenticator.authHeader()
       }
 
-      error.message must be ("error obtaining auth token. error-message")
+      error.message must be("error obtaining auth token. error-message")
     }
 
     "throw http client error when request fails" in {
-      val backend = SttpBackendStub[Try, Nothing, NothingT](TryMonad)
-        .whenAnyRequest
+      val backend = SttpBackendStub[Try, Nothing, NothingT](TryMonad).whenAnyRequest
         .thenRespond(throw new SttpClientException.ConnectException(new RuntimeException("runtime error")))
 
       val authToken     = AuthToken("valid-token", -1)
@@ -96,7 +94,7 @@ class Oauth2AuthenticatorSpec extends AnyWordSpec with Matchers with BeforeAndAf
         authenticator.authHeader()
       }
 
-      error.message must be ("java.lang.RuntimeException: runtime error")
+      error.message must be("java.lang.RuntimeException: runtime error")
     }
   }
 }

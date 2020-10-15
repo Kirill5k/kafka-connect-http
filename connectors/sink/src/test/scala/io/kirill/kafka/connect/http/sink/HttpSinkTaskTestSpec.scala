@@ -14,17 +14,17 @@ class HttpSinkTaskTestSpec extends AnyWordSpec with Matchers with MockitoSugar {
   "A HttpSinkTask" should {
 
     "start" in {
-      val task = new HttpSinkTask()
+      val task  = new HttpSinkTask()
       val props = Map("http.api.url" -> "http://foo.bar").asJava
 
       task.start(props)
 
-      task.writer.get mustBe a [HttpWriter]
+      task.writer.get mustBe a[HttpWriter]
     }
 
     "put" in {
       val writerMock = mock[HttpWriter]
-      val task = new HttpSinkTask()
+      val task       = new HttpSinkTask()
       task.writer = Some(writerMock)
 
       val records = List(new SinkRecord("topic", 0, null, null, null, "value", 0))
@@ -35,7 +35,7 @@ class HttpSinkTaskTestSpec extends AnyWordSpec with Matchers with MockitoSugar {
 
     "put when null value" in {
       val writerMock = mock[HttpWriter]
-      val task = new HttpSinkTask()
+      val task       = new HttpSinkTask()
       task.writer = Some(writerMock)
 
       val records = List(new SinkRecord("topic", 0, null, null, null, null, 0))
@@ -46,7 +46,7 @@ class HttpSinkTaskTestSpec extends AnyWordSpec with Matchers with MockitoSugar {
 
     "flush" in {
       val writerMock = mock[HttpWriter]
-      val task = new HttpSinkTask()
+      val task       = new HttpSinkTask()
       task.writer = Some(writerMock)
 
       task.flush(Map[TopicPartition, OffsetAndMetadata]().asJava)

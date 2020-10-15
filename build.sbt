@@ -1,5 +1,6 @@
+
 ThisBuild / scalaVersion := "2.13.3"
-ThisBuild / organization := "io.kirill"
+ThisBuild / organization := "io.github.kirill5k"
 ThisBuild / organizationName := "example"
 ThisBuild / resolvers ++= Seq(
   "Confluent" at "https://packages.confluent.io/maven/",
@@ -11,14 +12,30 @@ ThisBuild / resolvers ++= Seq(
 releaseVersionBump := sbtrelease.Version.Bump.Next
 releaseCrossBuild := false
 
+lazy val noPublish = Seq(
+  publish := {},
+  publishLocal := {},
+  publishArtifact := false,
+  publish / skip := true
+)
+
 lazy val root = (project in file("."))
+  .settings(noPublish)
   .settings(
-    name := "kafka-connect-http",
-    publish / skip := true
+    name := "kafka-connect-http"
   )
   .aggregate(sink)
 
+lazy val commonSettings = Seq(
+  organizationName := "Kafka Connect Http",
+  startYear := Some(2020),
+  licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt")),
+  resolvers += "Apache public" at "https://repository.apache.org/content/groups/public/",
+  scalafmtOnCompile := true
+)
+
 lazy val sink = (project in file("connectors/sink"))
+  .settings(commonSettings)
   .enablePlugins(BuildInfoPlugin)
   .settings(
     name := "kafka-connect-http-sink",
@@ -39,3 +56,4 @@ lazy val sink = (project in file("connectors/sink"))
     },
     addArtifact(artifact in (Compile, assembly), assembly)
   )
+  .enablePlugins(AutomateHeaderPlugin)

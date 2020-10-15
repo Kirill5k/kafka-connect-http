@@ -1,3 +1,19 @@
+/*
+ * Copyright 2020 Kafka Connect Http
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package io.kirill.kafka.connect.http.sink
 
 import java.util
@@ -135,7 +151,13 @@ object HttpSinkConfig {
     .define(RETRY_BACKOFF, Type.LONG, RETRY_BACKOFF_DEFAULT, Importance.MEDIUM, RETRY_BACKOFF_DOC)
     .define(AUTH_TYPE, Type.STRING, AUTH_TYPE_DEFAULT, Importance.HIGH, AUTH_TYPE_DOC)
     .define(OAUTH2_CLIENT_ID, Type.STRING, OAUTH2_CLIENT_ID_DEFAULT, Importance.MEDIUM, OAUTH2_CLIENT_ID_DOC)
-    .define(OAUTH2_CLIENT_SECRET, Type.STRING, OAUTH2_CLIENT_SECRET_DEFAULT, Importance.MEDIUM, OAUTH2_CLIENT_SECRET_DOC)
+    .define(
+      OAUTH2_CLIENT_SECRET,
+      Type.STRING,
+      OAUTH2_CLIENT_SECRET_DEFAULT,
+      Importance.MEDIUM,
+      OAUTH2_CLIENT_SECRET_DOC
+    )
     .define(OAUTH2_TOKEN_URL, Type.STRING, OAUTH2_TOKEN_URL_DEFAULT, Importance.MEDIUM, OAUTH2_TOKEN_URL_DOC)
 
   def apply(props: util.Map[String, String]): HttpSinkConfig = new HttpSinkConfig(props)
