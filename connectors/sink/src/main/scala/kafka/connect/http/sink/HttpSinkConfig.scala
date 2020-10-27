@@ -51,6 +51,7 @@ class HttpSinkConfig(
   val regexReplacements: Seq[String] = getString(REGEX_REPLACEMENTS).split(regexSep).toList
 
   val authType: String           = getString(AUTH_TYPE)
+  val authHeaderName: String     = getString(AUTH_HEADER_NAME)
   val oauth2TokenUrl: String     = getString(OAUTH2_TOKEN_URL)
   val oauth2ClientId: String     = getString(OAUTH2_CLIENT_ID)
   val oauth2ClientSecret: String = getString(OAUTH2_CLIENT_SECRET)
@@ -122,6 +123,10 @@ object HttpSinkConfig {
   val AUTH_TYPE_DOC     = "HTTP authentication type"
   val AUTH_TYPE_DEFAULT = "none"
 
+  val AUTH_HEADER_NAME         = "auth.header.name"
+  val AUTH_HEADER_NAME_DOC     = "Authentication header name"
+  val AUTH_HEADER_NAME_DEFAULT = "Authorization"
+
   val OAUTH2_CLIENT_ID         = "auth.oauth2.client.id"
   val OAUTH2_CLIENT_ID_DOC     = "client-id"
   val OAUTH2_CLIENT_ID_DEFAULT = ""
@@ -150,6 +155,7 @@ object HttpSinkConfig {
     .define(MAX_RETRIES, Type.INT, MAX_RETRIES_DEFAULT, Importance.MEDIUM, MAX_RETRIES_DOC)
     .define(RETRY_BACKOFF, Type.LONG, RETRY_BACKOFF_DEFAULT, Importance.MEDIUM, RETRY_BACKOFF_DOC)
     .define(AUTH_TYPE, Type.STRING, AUTH_TYPE_DEFAULT, Importance.HIGH, AUTH_TYPE_DOC)
+    .define(AUTH_HEADER_NAME, Type.STRING, AUTH_HEADER_NAME_DEFAULT, Importance.MEDIUM, AUTH_HEADER_NAME_DOC)
     .define(OAUTH2_CLIENT_ID, Type.STRING, OAUTH2_CLIENT_ID_DEFAULT, Importance.MEDIUM, OAUTH2_CLIENT_ID_DOC)
     .define(
       OAUTH2_CLIENT_SECRET,

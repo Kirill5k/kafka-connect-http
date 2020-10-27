@@ -48,6 +48,7 @@ class HttpSinkConfigSpec extends AnyWordSpec with Matchers {
       config.regexReplacements must be(List(""))
 
       config.authType must be("none")
+      config.authHeaderName must be("Authorization")
       config.oauth2TokenUrl must be("")
       config.oauth2ClientId must be("")
       config.oauth2ClientSecret must be("")
@@ -70,6 +71,7 @@ class HttpSinkConfigSpec extends AnyWordSpec with Matchers {
         "regex.replacements"        -> "bar~foo",
         "regex.separator"           -> "~",
         "auth.type"                 -> "oauth2",
+        "auth.header.name"          -> "Auth",
         "auth.oauth2.client.id"     -> "client-id",
         "auth.oauth2.client.secret" -> "client-secret",
         "auth.oauth2.token.url"     -> "http://foo.bar/token"
@@ -91,6 +93,7 @@ class HttpSinkConfigSpec extends AnyWordSpec with Matchers {
       config.regexReplacements must be(List("bar", "foo"))
 
       config.authType must be("oauth2")
+      config.authHeaderName must be("Auth")
       config.oauth2TokenUrl must be("http://foo.bar/token")
       config.oauth2ClientId must be("client-id")
       config.oauth2ClientSecret must be("client-secret")

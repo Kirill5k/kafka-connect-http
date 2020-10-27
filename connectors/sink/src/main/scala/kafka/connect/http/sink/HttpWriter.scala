@@ -54,8 +54,9 @@ class HttpWriter(
   }
 
   private def sendBatch(records: List[SinkRecord]): Unit = {
-    val body    = formatter.toJson(records)
-    val headers = authenticator.fold(config.httpHeaders)(a => config.httpHeaders + ("Authorization" -> a.authHeader()))
+    val body = formatter.toJson(records)
+    val headers =
+      authenticator.fold(config.httpHeaders)(a => config.httpHeaders + (config.authHeaderName -> a.authHeader()))
     dispatcher.send(headers, body)
   }
 }
