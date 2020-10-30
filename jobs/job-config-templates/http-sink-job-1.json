@@ -1,0 +1,34 @@
+{
+  "name": "http-sink-job-1",
+  "config": {
+    "connector.class": "kafka.connect.http.sink.HttpSinkConnector",
+    "tasks.max": "2",
+    "topics": "test-kafka-topic",
+
+    "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+    "key.converter.schemas.enable": "false",
+
+    "value.converter": "io.confluent.connect.avro.AvroConverter",
+    "value.converter.schema.registry.url": "http://schemaregistry:8081",
+    "enhanced.avro.schema.support": "true",
+    "specific.avro.reader": "true",
+
+    "http.api.url": "http://mock-server:8084/data/job-1?auth=oauth2",
+    "http.request.method": "POST",
+    "http.headers": "content-type:application/json|accept:application/json",
+    "headers.separator": "\\|",
+    "batch.size": "1",
+    "batch.separator": ",",
+    "batch.prefix": "[",
+    "batch.suffix": "]",
+    "max.retries": "3",
+    "retry.backoff.ms": "1000",
+    "regex.patterns": ",~=~Struct\\{~\\}",
+    "regex.replacements": "\",\"~\":\"~{\"~\"}",
+    "regex.separator": "~",
+    "auth.type": "oauth2",
+    "auth.oauth2.client.id": "mock-server-client-id",
+    "auth.oauth2.client.secret": "mock-server-client-secret",
+    "auth.oauth2.token.url": "http://mock-server:8084/token"
+  }
+}
