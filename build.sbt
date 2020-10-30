@@ -1,3 +1,8 @@
+import sbt.Keys.crossScalaVersions
+
+lazy val scala212               = "2.12.10"
+lazy val scala213               = "2.13.3"
+lazy val supportedScalaVersions = List(scala212, scala213)
 
 ThisBuild / scalaVersion := "2.13.3"
 ThisBuild / organization := "io.github.kirill5k"
@@ -22,7 +27,8 @@ lazy val noPublish = Seq(
 lazy val root = (project in file("."))
   .settings(noPublish)
   .settings(
-    name := "kafka-connect-http"
+    name := "kafka-connect-http",
+    crossScalaVersions := Nil
   )
   .aggregate(sink)
 
@@ -31,7 +37,8 @@ lazy val commonSettings = Seq(
   startYear := Some(2020),
   licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt")),
   resolvers += "Apache public" at "https://repository.apache.org/content/groups/public/",
-  scalafmtOnCompile := true
+  scalafmtOnCompile := true,
+  crossScalaVersions := supportedScalaVersions
 )
 
 lazy val sink = (project in file("connectors/sink"))
