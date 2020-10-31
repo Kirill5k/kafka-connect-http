@@ -17,7 +17,7 @@
 package kafka.connect.http.sink.authenticator
 
 import kafka.connect.http.sink.HttpSinkConfig
-import sttp.client.{Identity, NothingT, SttpBackend}
+import sttp.client.{NothingT, SttpBackend}
 
 import scala.util.Try
 

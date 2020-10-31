@@ -17,9 +17,7 @@
 package kafka.connect.http.sink.dispatcher
 
 import kafka.connect.http.sink.errors.{HttpClientError, MaxAmountOfRetriesReached}
-import kafka.connect.http.sink.Logging
 import kafka.connect.http.sink.{HttpSinkConfig, Logging}
-import kafka.connect.http.sink.errors.MaxAmountOfRetriesReached
 import sttp.client._
 import sttp.model.Method
 

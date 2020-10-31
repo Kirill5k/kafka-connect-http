@@ -67,7 +67,7 @@ class HttpSinkTaskTestSpec extends AnyWordSpec with Matchers with MockitoSugar {
 
       task.flush(Map[TopicPartition, OffsetAndMetadata]().asJava)
 
-      verify(writerMock).flush
+      verify(writerMock).flush()
     }
   }
 }

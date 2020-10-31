@@ -16,17 +16,15 @@
 
 package kafka.connect.http.sink.authenticator
 
-import cats.MonadError
-import Oauth2Authenticator.AuthToken
-import kafka.connect.http.sink.errors.{AuthError, HttpClientError, JsonParsingError}
 import kafka.connect.http.sink.HttpSinkConfig
+import kafka.connect.http.sink.authenticator.Oauth2Authenticator.AuthToken
 import kafka.connect.http.sink.errors.{AuthError, HttpClientError, JsonParsingError}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import sttp.client.monad.TryMonad
 import sttp.client.testing.SttpBackendStub
-import sttp.client.{NothingT, Response, StringBody, SttpClientException, TryHttpURLConnectionBackend}
+import sttp.client.{NothingT, Response, StringBody, SttpClientException}
 import sttp.model.{Header, Method, StatusCode}
 
 import scala.util.Try
@@ -47,8 +45,9 @@ class Oauth2AuthenticatorSpec extends AnyWordSpec with Matchers with BeforeAndAf
   "An Oauth2Authenticator" should {
 
     "return auth header if token is still valid" in {
-      val backend = SttpBackendStub[Try, Nothing, NothingT](TryMonad).whenAnyRequest
-        .thenRespond(throw new SttpClientException.ConnectException(new RuntimeException))
+      val backend = SttpBackendStub[Try, Nothing, NothingT](TryMonad).whenRequestMatchesPartial {
+        case _ => throw new SttpClientException.ConnectException(new RuntimeException)
+      }
 
       val authToken     = AuthToken("valid-token", 1000)
       val authenticator = new Oauth2Authenticator(config, backend, authToken)
@@ -101,8 +100,10 @@ class Oauth2AuthenticatorSpec extends AnyWordSpec with Matchers with BeforeAndAf
     }
 
     "throw http client error when request fails" in {
-      val backend = SttpBackendStub[Try, Nothing, NothingT](TryMonad).whenAnyRequest
-        .thenRespond(throw new SttpClientException.ConnectException(new RuntimeException("runtime error")))
+      val backend = SttpBackendStub[Try, Nothing, NothingT](TryMonad)
+        .whenRequestMatchesPartial {
+          case _ => throw new SttpClientException.ConnectException(new RuntimeException("runtime error"))
+        }
 
       val authToken     = AuthToken("valid-token", -1)
       val authenticator = new Oauth2Authenticator(config, backend, authToken)

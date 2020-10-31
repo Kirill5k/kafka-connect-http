@@ -5,7 +5,6 @@ object Dependencies {
   object Versions {
     lazy val kafka     = "2.5.0"
     lazy val confluent = "5.5.0"
-    lazy val scalaj    = "2.4.2"
     lazy val circe     = "0.13.0"
     lazy val sttp      = "2.2.5"
 
@@ -22,8 +21,6 @@ object Dependencies {
     lazy val connectAvro       = "io.confluent"                 % "kafka-connect-avro-converter"      % Versions.confluent
     lazy val connectJson       = "org.apache.kafka"             % "connect-json"                      % Versions.kafka
     lazy val sttpCore          = "com.softwaremill.sttp.client" %% "core"                             % Versions.sttp
-    lazy val sttpFutureBackend = "com.softwaremill.sttp.client" %% "async-http-client-backend-future" % Versions.sttp
-    lazy val scalajHttp        = "org.scalaj"                   %% "scalaj-http"                      % Versions.scalaj
 
     lazy val circeCore    = "io.circe" %% "circe-core"    % Versions.circe
     lazy val circeParser  = "io.circe" %% "circe-parser"  % Versions.circe
@@ -40,12 +37,10 @@ object Dependencies {
     Libraries.connectApi,
     Libraries.connectAvro,
     Libraries.connectJson,
-    Libraries.scalajHttp,
     Libraries.circeCore,
     Libraries.circeGeneric,
     Libraries.circeParser,
-    Libraries.sttpCore,
-    Libraries.sttpFutureBackend
+    Libraries.sttpCore
   )
 
   lazy val test = Seq(
