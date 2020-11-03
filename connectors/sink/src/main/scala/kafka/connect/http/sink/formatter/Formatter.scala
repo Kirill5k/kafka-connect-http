@@ -20,7 +20,7 @@ import kafka.connect.http.sink.HttpSinkConfig
 import org.apache.kafka.connect.sink.SinkRecord
 
 trait Formatter {
-  def toJson(records: Seq[SinkRecord]): String
+  def toJson(records: Iterable[SinkRecord]): String
 }
 
 final class RegexFormatter(
@@ -35,7 +35,7 @@ final class RegexFormatter(
       case (res, (regex, replacement)) => res.replaceAll(regex, replacement)
     }
 
-  override def toJson(records: Seq[SinkRecord]): String =
+  override def toJson(records: Iterable[SinkRecord]): String =
     records
       .map(formatRecord)
       .mkString(config.batchPrefix, config.batchSeparator, config.batchSuffix)
