@@ -54,7 +54,7 @@ class HttpWriter(
   }
 
   private def sendBatch(records: List[SinkRecord]): Unit = {
-    val body = formatter.toJson(records)
+    val body = formatter.toOutputFormat(records)
     val headers =
       authenticator.fold(config.httpHeaders)(a => config.httpHeaders + (config.authHeaderName -> a.authHeader()))
     dispatcher.send(headers, body)
@@ -66,7 +66,10 @@ object HttpWriter {
   def make(config: HttpSinkConfig): HttpWriter = {
     val backend    = TryHttpURLConnectionBackend()
     val dispatcher = Dispatcher.sttp(config, backend)
-    val formatter  = Formatter.regexBased(config)
+    val formatter = config.formatter match {
+      case "regex"  => Formatter.regexBased(config)
+      case "schema" => Formatter.schemaBased(config)
+    }
     val authenticator = config.authType match {
       case "oauth2" => Some(Authenticator.oauth2(config, backend))
       case _        => None

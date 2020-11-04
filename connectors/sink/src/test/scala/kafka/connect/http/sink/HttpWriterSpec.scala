@@ -66,7 +66,7 @@ class HttpWriterSpec extends AnyWordSpec with Matchers with MockitoSugar {
 
       val (authenticator, dispatcher, formatter) = mocks
 
-      when(formatter.toJson(any[List[SinkRecord]])).thenReturn(json)
+      when(formatter.toOutputFormat(any[List[SinkRecord]])).thenReturn(json)
       when(authenticator.authHeader()).thenReturn("Basic access-token")
       val writer = new HttpWriter(config, dispatcher, formatter, Some(authenticator))
 
@@ -96,7 +96,7 @@ class HttpWriterSpec extends AnyWordSpec with Matchers with MockitoSugar {
       )
 
       val (_, dispatcher, formatter) = mocks
-      when(formatter.toJson(any[List[SinkRecord]])).thenReturn(json)
+      when(formatter.toOutputFormat(any[List[SinkRecord]])).thenReturn(json)
       val writer = new HttpWriter(config, dispatcher, formatter, None)
 
       writer.time = Instant.now().toEpochMilli - 1000
@@ -104,7 +104,7 @@ class HttpWriterSpec extends AnyWordSpec with Matchers with MockitoSugar {
 
       writer.currentBatch must be(Nil)
 
-      verify(formatter).toJson(records)
+      verify(formatter).toOutputFormat(records)
       verify(dispatcher).send(Map("content-type" -> "application/json"), json)
     }
 
@@ -118,7 +118,7 @@ class HttpWriterSpec extends AnyWordSpec with Matchers with MockitoSugar {
       )
 
       val (_, dispatcher, formatter) = mocks
-      when(formatter.toJson(any[List[SinkRecord]])).thenReturn(json)
+      when(formatter.toOutputFormat(any[List[SinkRecord]])).thenReturn(json)
       val writer = new HttpWriter(config, dispatcher, formatter, None)
 
       writer.currentBatch = records
@@ -126,7 +126,7 @@ class HttpWriterSpec extends AnyWordSpec with Matchers with MockitoSugar {
 
       writer.currentBatch must be(Nil)
 
-      verify(formatter).toJson(records)
+      verify(formatter).toOutputFormat(records)
       verify(dispatcher).send(Map("content-type" -> "application/json"), json)
     }
   }
