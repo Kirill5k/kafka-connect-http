@@ -46,6 +46,7 @@ class HttpSinkConfig(
   val batchSuffix: String            = getString(BATCH_SUFFIX)
   val maxRetries: Int                = getInt(MAX_RETRIES)
   val retryBackoff: Long             = getLong(RETRY_BACKOFF)
+  val formatter: String              = getString(FORMATTER)
   val regexPatterns: Seq[String]     = getString(REGEX_PATTERNS).split(regexSep).toList
   val regexReplacements: Seq[String] = getString(REGEX_REPLACEMENTS).split(regexSep).toList
 
@@ -102,6 +103,10 @@ object HttpSinkConfig {
   val RETRY_BACKOFF_DOC     = "the duration in milliseconds to wait after an error before a retry attempt is made"
   val RETRY_BACKOFF_DEFAULT = 3000
 
+  val FORMATTER         = "formatter.type"
+  val FORMATTER_DOC     = "Formatter style to use"
+  val FORMATTER_DEFAULT = "regex"
+
   val REGEX_PATTERNS         = "regex.patterns"
   val REGEX_PATTERNS_DOC     = "character separated regex patterns to match for replacement in the destination messages"
   val REGEX_PATTERNS_DEFAULT = ""
@@ -143,6 +148,7 @@ object HttpSinkConfig {
     .define(BATCH_SUFFIX, Type.STRING, BATCH_SUFFIX_DEFAULT, Importance.MEDIUM, BATCH_SUFFIX_DOC)
     .define(BATCH_SEPARATOR, Type.STRING, BATCH_SEPARATOR_DEFAULT, Importance.MEDIUM, BATCH_SEPARATOR_DOC)
     .define(HEADERS_SEPARATOR, Type.STRING, HEADERS_SEPARATOR_DEFAULT, Importance.MEDIUM, HEADERS_SEPARATOR_DOC)
+    .define(FORMATTER, Type.STRING, FORMATTER_DEFAULT, Importance.HIGH, FORMATTER_DOC)
     .define(REGEX_PATTERNS, Type.STRING, REGEX_PATTERNS_DEFAULT, Importance.LOW, REGEX_PATTERNS_DOC)
     .define(REGEX_REPLACEMENTS, Type.STRING, REGEX_REPLACEMENTS_DEFAULT, Importance.LOW, REGEX_REPLACEMENTS_DOC)
     .define(REGEX_SEPARATOR, Type.STRING, REGEX_SEPARATOR_DEFAULT, Importance.MEDIUM, REGEX_SEPARATOR_DOC)
