@@ -3,8 +3,8 @@ import sbt._
 object Dependencies {
 
   object Versions {
-    lazy val kafka     = "2.5.0"
-    lazy val confluent = "5.5.0"
+    lazy val kafka     = "2.7.0"
+    lazy val confluent = "6.1.0"
     lazy val scalaj    = "2.4.2"
     lazy val circe     = "0.13.0"
     lazy val sttp      = "2.2.5"
