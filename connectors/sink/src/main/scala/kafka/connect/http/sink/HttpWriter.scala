@@ -22,7 +22,7 @@ import kafka.connect.http.sink.authenticator.Authenticator
 import kafka.connect.http.sink.dispatcher.Dispatcher
 import kafka.connect.http.sink.formatter.Formatter
 import org.apache.kafka.connect.sink.SinkRecord
-import sttp.client.TryHttpURLConnectionBackend
+import sttp.client3.TryHttpURLConnectionBackend
 
 class HttpWriter(
     private val config: HttpSinkConfig,

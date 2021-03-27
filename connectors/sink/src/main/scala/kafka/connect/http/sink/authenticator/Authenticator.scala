@@ -17,7 +17,7 @@
 package kafka.connect.http.sink.authenticator
 
 import kafka.connect.http.sink.HttpSinkConfig
-import sttp.client.{NothingT, SttpBackend}
+import sttp.client3.{SttpBackend}
 
 import scala.util.Try
 
@@ -26,6 +26,6 @@ trait Authenticator {
 }
 
 object Authenticator {
-  def oauth2(config: HttpSinkConfig, backend: SttpBackend[Try, Nothing, NothingT]): Authenticator =
+  def oauth2(config: HttpSinkConfig, backend: SttpBackend[Try, Any]): Authenticator =
     new Oauth2Authenticator(config, backend)
 }

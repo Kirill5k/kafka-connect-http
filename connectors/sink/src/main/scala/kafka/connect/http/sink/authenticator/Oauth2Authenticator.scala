@@ -16,20 +16,19 @@
 
 package kafka.connect.http.sink.authenticator
 
-import java.time.Instant
-
 import io.circe.generic.auto._
-import io.circe.parser._
-import Oauth2Authenticator.AuthToken
-import kafka.connect.http.sink.errors.{AuthError, HttpClientError, JsonParsingError}
 import kafka.connect.http.sink.HttpSinkConfig
-import sttp.client.{NothingT, SttpBackend, UriContext, basicRequest}
+import kafka.connect.http.sink.authenticator.Oauth2Authenticator.AuthToken
+import kafka.connect.http.sink.errors.{AuthError, HttpClientError, JsonParsingError}
+import sttp.client3.circe.asJson
+import sttp.client3.{basicRequest, DeserializationException, HttpError, SttpBackend, UriContext}
 
+import java.time.Instant
 import scala.util.{Failure, Success, Try}
 
-private[authenticator] final class Oauth2Authenticator(
+final private[authenticator] class Oauth2Authenticator(
     private val conf: HttpSinkConfig,
-    private val backend: SttpBackend[Try, Nothing, NothingT],
+    private val backend: SttpBackend[Try, Any],
     private var authToken: AuthToken = AuthToken("expired", -1)
 ) extends Authenticator {
   import Oauth2Authenticator._
@@ -54,20 +53,22 @@ private[authenticator] final class Oauth2Authenticator(
         .auth
         .basic(conf.oauth2ClientId, conf.oauth2ClientSecret)
         .post(uri"${conf.oauth2TokenUrl}")
+        .response(asJson[AccessTokenResponse])
         .body(requestBody)
     )
 
     response match {
       case Success(res) =>
         res.body match {
-          case Right(json) =>
-            val accessToken = decode[AccessTokenResponse](json).getOrElse(throw JsonParsingError(json))
+          case Right(accessToken) =>
             authToken = AuthToken(accessToken.access_token, accessToken.expires_in)
-          case Left(error) =>
-            throw AuthError(s"error obtaining auth token. $error")
+          case Left(DeserializationException(body, _)) =>
+            throw JsonParsingError(body)
+          case Left(HttpError(body, status)) =>
+            throw AuthError(s"error obtaining auth token. $status - $body")
         }
       case Failure(exception) =>
-        throw HttpClientError(exception.getMessage)
+        throw HttpClientError(exception.getCause.getMessage)
     }
   }
 }
