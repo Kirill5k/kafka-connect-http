@@ -50,7 +50,7 @@ class Oauth2AuthenticatorSpec extends AnyWordSpec with Matchers with BeforeAndAf
       }
 
       val authToken     = AuthToken("valid-token", 1000)
-      val authenticator = new Oauth2Authenticator(config, backend, authToken)
+      val authenticator = new Oauth2Authenticator(config, backend, Some(authToken))
 
       authenticator.authHeader() must be("Bearer valid-token")
     }
@@ -68,7 +68,7 @@ class Oauth2AuthenticatorSpec extends AnyWordSpec with Matchers with BeforeAndAf
         .thenRespond("""{"access_token": "new-token","expires_in": 7200,"token_type": "Application Access Token"}""")
 
       val authToken     = AuthToken("expired-token", 0)
-      val authenticator = new Oauth2Authenticator(config, backend, authToken)
+      val authenticator = new Oauth2Authenticator(config, backend, Some(authToken))
 
       authenticator.authHeader() must be("Bearer new-token")
     }
@@ -77,8 +77,7 @@ class Oauth2AuthenticatorSpec extends AnyWordSpec with Matchers with BeforeAndAf
       val backend = SttpBackendStub[Try, Any](TryMonad).whenAnyRequest
         .thenRespond("""{"foo": "bar"}""")
 
-      val authToken     = AuthToken("expired-token", 0)
-      val authenticator = new Oauth2Authenticator(config, backend, authToken)
+      val authenticator = new Oauth2Authenticator(config, backend, None)
 
       assertThrows[JsonParsingError] {
         authenticator.authHeader()
@@ -89,8 +88,7 @@ class Oauth2AuthenticatorSpec extends AnyWordSpec with Matchers with BeforeAndAf
       val backend = SttpBackendStub[Try, Any](TryMonad).whenAnyRequest
         .thenRespond(Response("error-message", StatusCode.InternalServerError))
 
-      val authToken     = AuthToken("expired-token", 0)
-      val authenticator = new Oauth2Authenticator(config, backend, authToken)
+      val authenticator = new Oauth2Authenticator(config, backend, None)
 
       val error = intercept[AuthError] {
         authenticator.authHeader()
@@ -105,8 +103,7 @@ class Oauth2AuthenticatorSpec extends AnyWordSpec with Matchers with BeforeAndAf
           throw new SttpClientException.ConnectException(r, new RuntimeException("runtime error"))
         }
 
-      val authToken     = AuthToken("valid-token", -1)
-      val authenticator = new Oauth2Authenticator(config, backend, authToken)
+      val authenticator = new Oauth2Authenticator(config, backend, None)
 
       val error = intercept[HttpClientError] {
         authenticator.authHeader()

@@ -29,15 +29,15 @@ import scala.util.{Failure, Success, Try}
 final private[authenticator] class Oauth2Authenticator(
     private val conf: HttpSinkConfig,
     private val backend: SttpBackend[Try, Any],
-    private var authToken: AuthToken = AuthToken("expired", -1)
+    private var authToken: Option[AuthToken] = None
 ) extends Authenticator {
   import Oauth2Authenticator._
 
   override def authHeader(): String = {
-    if (authToken.hasExpired) {
-      refreshToken()
+    if (authToken.fold(true)(_.hasExpired)) {
+      authToken = Some(getNewToken)
     }
-    s"Bearer ${authToken.token}"
+    s"Bearer ${authToken.get.token}"
   }
 
   private val requestBody = Map(
@@ -46,22 +46,20 @@ final private[authenticator] class Oauth2Authenticator(
     "grant_type"    -> "client_credentials"
   )
 
-  private def refreshToken(): Unit = {
-    val response = backend.send(
-      basicRequest
-        .header("Content-Type", "application/x-www-form-urlencoded")
-        .auth
-        .basic(conf.oauth2ClientId, conf.oauth2ClientSecret)
-        .post(uri"${conf.oauth2TokenUrl}")
-        .response(asJson[AccessTokenResponse])
-        .body(requestBody)
-    )
+  private val request = basicRequest
+    .header("Content-Type", "application/x-www-form-urlencoded")
+    .auth
+    .basic(conf.oauth2ClientId, conf.oauth2ClientSecret)
+    .post(uri"${conf.oauth2TokenUrl}")
+    .response(asJson[AccessTokenResponse])
+    .body(requestBody)
 
-    response match {
+  private def getNewToken: AuthToken =
+    backend.send(request) match {
       case Success(res) =>
         res.body match {
           case Right(accessToken) =>
-            authToken = AuthToken(accessToken.access_token, accessToken.expires_in)
+            AuthToken(accessToken.access_token, accessToken.expires_in)
           case Left(DeserializationException(body, _)) =>
             throw JsonParsingError(body)
           case Left(HttpError(body, status)) =>
@@ -70,7 +68,6 @@ final private[authenticator] class Oauth2Authenticator(
       case Failure(exception) =>
         throw HttpClientError(exception.getCause.getMessage)
     }
-  }
 }
 
 private[authenticator] object Oauth2Authenticator {
