@@ -102,7 +102,7 @@ object HttpSinkConfig {
 
   val READ_TIMEOUT         = "request.read.timeout.ms"
   val READ_TIMEOUT_DOC     = "the maximum request read timeout (-1 = disabled)"
-  val READ_TIMEOUT_DEFAULT = 60000
+  val READ_TIMEOUT_DEFAULT = 180000
 
   val CONNECT_TIMEOUT         = "request.connect.timeout.ms"
   val CONNECT_TIMEOUT_DOC     = "the maximum request connect timeout (-1 = disabled)"
