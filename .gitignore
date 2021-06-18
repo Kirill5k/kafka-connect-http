@@ -5,9 +5,11 @@ data
 *.iws
 *.iml
 /out/
+null/
 target
 .DS_Store
 .gradle
 .metals
 .bloop
 *.log
+.bsp

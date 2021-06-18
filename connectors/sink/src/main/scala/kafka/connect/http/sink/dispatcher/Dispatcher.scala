@@ -17,10 +17,8 @@
 package kafka.connect.http.sink.dispatcher
 
 import kafka.connect.http.sink.errors.{HttpClientError, MaxAmountOfRetriesReached}
-import kafka.connect.http.sink.Logging
 import kafka.connect.http.sink.{HttpSinkConfig, Logging}
-import kafka.connect.http.sink.errors.MaxAmountOfRetriesReached
-import sttp.client._
+import sttp.client3._
 import sttp.model.Method
 
 import scala.util.{Failure, Success, Try}
@@ -29,9 +27,9 @@ trait Dispatcher extends Logging {
   def send(headers: Map[String, String], body: String): Unit
 }
 
-private[dispatcher] final class SttpDispatcher(
+final private[dispatcher] class SttpDispatcher(
     private val config: HttpSinkConfig,
-    private val backend: SttpBackend[Try, Nothing, NothingT],
+    private val backend: SttpBackend[Try, Any],
     private var failedAttempts: Int = 0
 ) extends Dispatcher {
 
@@ -66,6 +64,6 @@ private[dispatcher] final class SttpDispatcher(
 }
 
 object Dispatcher {
-  def sttp(config: HttpSinkConfig, backend: SttpBackend[Try, Nothing, NothingT]): Dispatcher =
+  def sttp(config: HttpSinkConfig, backend: SttpBackend[Try, Any]): Dispatcher =
     new SttpDispatcher(config, backend)
 }

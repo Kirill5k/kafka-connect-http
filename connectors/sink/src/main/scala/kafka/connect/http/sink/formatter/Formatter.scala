@@ -35,8 +35,8 @@ final class RegexFormatter(
     config.regexPatterns.zip(config.regexReplacements)
 
   private val formatRecord: SinkRecord => String = rec =>
-    regexReplacements.foldLeft(rec.value().toString) {
-      case (res, (regex, replacement)) => res.replaceAll(regex, replacement)
+    regexReplacements.foldLeft(rec.value().toString) { case (res, (regex, replacement)) =>
+      res.replaceAll(regex, replacement)
     }
 
   override def toOutputFormat(records: Seq[SinkRecord]): String =
