@@ -21,7 +21,7 @@ import org.apache.kafka.connect.data.{Schema, Struct}
 import org.apache.kafka.connect.sink.SinkRecord
 import java.lang.{String => JavaString}
 
-import scala.util.{Failure, Try}
+import scala.util.{Try}
 
 trait Formatter {
   def toOutputFormat(records: Seq[SinkRecord]): String
@@ -55,7 +55,7 @@ final class SchemaBasedFormatter(private val config: HttpSinkConfig) extends For
 
   private val formatRecord: SinkRecord => String = rec =>
     rec.valueSchema().`type`() match {
-      case Schema.Type.STRUCT => formatStruct(rec.valueSchema(), rec.value().asInstanceOf[Struct])
+      case Schema.Type.STRUCT => formatStruct(rec.value().asInstanceOf[Struct])
       // assuming that bytes are actually convertible to string
       case Schema.Type.BYTES =>
         Try(new JavaString(rec.value().asInstanceOf[Array[Byte]])).getOrElse(JavaString.valueOf(rec.value))
@@ -64,7 +64,7 @@ final class SchemaBasedFormatter(private val config: HttpSinkConfig) extends For
     }
 
   // TODO: improve
-  private def formatStruct(schema: Schema, value: Struct): String = JavaString.valueOf(value)
+  private def formatStruct(value: Struct): String = JavaString.valueOf(value)
 
 }
 

@@ -82,7 +82,7 @@ class DispatcherSpec extends AnyWordSpec with Matchers {
         dispatcher.send(Map("Content-Type" -> "application/json"), "{\"foo\":\"bar\"}")
       }
 
-      error.message must be("reached the maximum number of times to retry on errors before failing the task")
+      error.message must be("reached the maximum number of times to retry on errors before failing the task: Something went wrong")
     }
   }
 }

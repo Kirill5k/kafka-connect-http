@@ -20,9 +20,9 @@ import kafka.connect.http.sink.authenticator.Authenticator
 import kafka.connect.http.sink.dispatcher.Dispatcher
 import kafka.connect.http.sink.formatter.Formatter
 import org.apache.kafka.connect.sink.SinkRecord
-import sttp.client3.TryHttpURLConnectionBackend
+import sttp.client3.{SttpBackendOptions, TryHttpURLConnectionBackend}
 
-import scala.collection.mutable
+import scala.concurrent.duration.DurationLong
 
 class HttpWriter(
     private val config: HttpSinkConfig,
@@ -38,29 +38,29 @@ class HttpWriter(
     batches = batches ++ records
     while ((batches.size >= config.batchSize && batches.size > 0) || !atLeastOneSent) {
       val (toSend, remaining) = batches.splitAt(config.batchSize)
-      sendBatch(toSend)
+      sendBatch(toSend, !atLeastOneSent)
       atLeastOneSent = true
       batches = remaining
     }
   }
 
   def flush(): Unit = {
-    batches.grouped(config.batchSize).foreach(sendBatch)
+    batches.grouped(config.batchSize).foreach(sendBatch(_))
     batches = List()
   }
 
-  private def sendBatch(records: List[SinkRecord]): Unit = {
+  private def sendBatch(records: List[SinkRecord], failFast: Boolean = false): Unit = {
     val body = formatter.toOutputFormat(records)
     val headers =
       authenticator.fold(config.httpHeaders)(a => config.httpHeaders + (config.authHeaderName -> a.authHeader()))
-    dispatcher.send(headers, body)
+    dispatcher.send(headers, body, failFast)
   }
 }
 
 object HttpWriter {
 
   def make(config: HttpSinkConfig): HttpWriter = {
-    val backend    = TryHttpURLConnectionBackend()
+    val backend    = TryHttpURLConnectionBackend(options = SttpBackendOptions(connectionTimeout = config.connectTimeout.milliseconds, None))
     val dispatcher = Dispatcher.sttp(config, backend)
     val formatter = config.formatter match {
       case "regex"  => Formatter.regexBased(config)
