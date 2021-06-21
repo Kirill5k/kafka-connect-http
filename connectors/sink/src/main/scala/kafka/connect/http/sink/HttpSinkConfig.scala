@@ -112,11 +112,11 @@ object HttpSinkConfig {
   val MAX_RETRIES_DOC     = "the maximum number of times to retry on errors before failing the task (-1 = unlimited)"
   val MAX_RETRIES_DEFAULT = 10
 
-  val MAX_RETRIES_TIMEOUT         = "max.retries.timeout.ms"
+  val MAX_RETRIES_TIMEOUT         = "retry.timeout.max.ms"
   val MAX_RETRIES_TIMEOUT_DOC     = "the maximum timeout to retry on errors before failing the task (-1 = disabled)"
   val MAX_RETRIES_TIMEOUT_DEFAULT = 86400000
 
-  val MAX_BACKOFF_TIMEOUT         = "max.backoff.timeout.ms"
+  val MAX_BACKOFF_TIMEOUT         = "retry.backoff.timeout.ms"
   val MAX_BACKOFF_TIMEOUT_DOC     = "the maximum backoff timeout for a single retry"
   val MAX_BACKOFF_TIMEOUT_DEFAULT = 1800000
 
