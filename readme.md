@@ -35,4 +35,4 @@ The kafka connect http sink connector consumes records from the specified kafka 
 ### Error handling
 
 Errors on network level (read, connect) and http errors (>=400) will be propagated with status code/text (if applicable).
-All network and http errors will be retried. (At-least-once delivery)
+All network and http errors will be retried if at least one message has been correctly delivered after the task start. (At-least-once delivery semantic with fail-fast)
