@@ -45,7 +45,8 @@ class HttpWriter(
   }
 
   def flush(): Unit = {
-    batches.grouped(config.batchSize).foreach(sendBatch(_))
+    batches.grouped(config.batchSize).foreach(sendBatch(_, atLeastOneSent))
+    atLeastOneSent = true
     batches = List()
   }
 
