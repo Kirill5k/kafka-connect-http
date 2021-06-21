@@ -20,10 +20,10 @@ import kafka.connect.http.sink.errors.SinkError
 import kafka.connect.http.sink.HttpSinkConfig
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import sttp.client.monad.TryMonad
-import sttp.client.testing.SttpBackendStub
-import sttp.client.{NothingT, Response, StringBody}
+import sttp.client3.testing.SttpBackendStub
+import sttp.client3.{Response, StringBody}
 import sttp.model.{Header, Method, StatusCode}
+import sttp.monad.TryMonad
 
 import scala.util.Try
 
@@ -41,7 +41,7 @@ class DispatcherSpec extends AnyWordSpec with Matchers {
   "A LiveDispatcher" should {
 
     "send http request" in {
-      val backend = SttpBackendStub[Try, Nothing, NothingT](TryMonad)
+      val backend = SttpBackendStub[Try, Any](TryMonad)
         .whenRequestMatches { r =>
           r.method == Method.PUT &&
           r.headers.contains(Header("Content-Type", "application/json"))
@@ -55,7 +55,7 @@ class DispatcherSpec extends AnyWordSpec with Matchers {
     }
 
     "retry on failed attempt" in {
-      val backend = SttpBackendStub[Try, Nothing, NothingT](TryMonad).whenAnyRequest
+      val backend = SttpBackendStub[Try, Any](TryMonad).whenAnyRequest
         .thenRespondCyclicResponses(
           Response("error", StatusCode.InternalServerError, "Something went wrong"),
           Response("error", StatusCode.InternalServerError, "Something went wrong"),
@@ -68,7 +68,7 @@ class DispatcherSpec extends AnyWordSpec with Matchers {
     }
 
     "thrown an exception when number of retries is greater than max" in {
-      val backend = SttpBackendStub[Try, Nothing, NothingT](TryMonad).whenAnyRequest
+      val backend = SttpBackendStub[Try, Any](TryMonad).whenAnyRequest
         .thenRespondCyclicResponses(
           Response("error", StatusCode.InternalServerError, "Something went wrong"),
           Response("error", StatusCode.InternalServerError, "Something went wrong"),
@@ -82,7 +82,7 @@ class DispatcherSpec extends AnyWordSpec with Matchers {
         dispatcher.send(Map("Content-Type" -> "application/json"), "{\"foo\":\"bar\"}")
       }
 
-      error.message must be("reached the maximum number of times to retry on errors before failing the task")
+      error.message must be("reached the maximum number of times to retry on errors before failing the task: Something went wrong")
     }
   }
 }

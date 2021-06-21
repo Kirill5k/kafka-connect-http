@@ -40,15 +40,20 @@ class HttpSinkConfig(
     .map(_.split(":"))
     .map(x => (x(0), x(1)))
     .toMap
-  val batchSize: Int                 = getInt(BATCH_SIZE)
-  val batchPrefix: String            = getString(BATCH_PREFIX)
-  val batchSeparator: String         = getString(BATCH_SEPARATOR)
-  val batchSuffix: String            = getString(BATCH_SUFFIX)
-  val maxRetries: Int                = getInt(MAX_RETRIES)
-  val retryBackoff: Long             = getLong(RETRY_BACKOFF)
-  val formatter: String              = getString(FORMATTER)
-  val regexPatterns: Seq[String]     = getString(REGEX_PATTERNS).split(regexSep).toList
-  val regexReplacements: Seq[String] = getString(REGEX_REPLACEMENTS).split(regexSep).toList
+  val batchSize: Int                   = getInt(BATCH_SIZE)
+  val batchPrefix: String              = getString(BATCH_PREFIX)
+  val batchSeparator: String           = getString(BATCH_SEPARATOR)
+  val batchSuffix: String              = getString(BATCH_SUFFIX)
+  val maxRetries: Int                  = getInt(MAX_RETRIES)
+  val maxBackoff: Long                 = getLong(MAX_BACKOFF_TIMEOUT)
+  val maxTimeout: Long                 = getLong(MAX_RETRIES_TIMEOUT)
+  val readTimeout: Long                = getLong(READ_TIMEOUT)
+  val connectTimeout: Long             = getLong(CONNECT_TIMEOUT)
+  val retryBackoff: Long               = getLong(RETRY_BACKOFF)
+  val retryBackoffExponential: Boolean = getBoolean(RETRY_EXPONENTIAL_BACKOFF)
+  val formatter: String                = getString(FORMATTER)
+  val regexPatterns: Seq[String]       = getString(REGEX_PATTERNS).split(regexSep).toList
+  val regexReplacements: Seq[String]   = getString(REGEX_REPLACEMENTS).split(regexSep).toList
 
   val authType: String           = getString(AUTH_TYPE)
   val authHeaderName: String     = getString(AUTH_HEADER_NAME)
@@ -95,13 +100,33 @@ object HttpSinkConfig {
   val BATCH_SEPARATOR_DEFAULT = ","
   val BATCH_SEPARATOR_DOC     = "separator for records in a batch"
 
+  val READ_TIMEOUT         = "request.read.timeout.ms"
+  val READ_TIMEOUT_DOC     = "the maximum request read timeout (-1 = disabled)"
+  val READ_TIMEOUT_DEFAULT = 180000
+
+  val CONNECT_TIMEOUT         = "request.connect.timeout.ms"
+  val CONNECT_TIMEOUT_DOC     = "the maximum request connect timeout (-1 = disabled)"
+  val CONNECT_TIMEOUT_DEFAULT = 30000
+
   val MAX_RETRIES         = "max.retries"
-  val MAX_RETRIES_DOC     = "the maximum number of times to retry on errors before failing the task"
+  val MAX_RETRIES_DOC     = "the maximum number of times to retry on errors before failing the task (-1 = unlimited)"
   val MAX_RETRIES_DEFAULT = 10
+
+  val MAX_RETRIES_TIMEOUT         = "retry.timeout.max.ms"
+  val MAX_RETRIES_TIMEOUT_DOC     = "the maximum timeout to retry on errors before failing the task (-1 = disabled)"
+  val MAX_RETRIES_TIMEOUT_DEFAULT = 86400000
+
+  val MAX_BACKOFF_TIMEOUT         = "retry.backoff.timeout.ms"
+  val MAX_BACKOFF_TIMEOUT_DOC     = "the maximum backoff timeout for a single retry"
+  val MAX_BACKOFF_TIMEOUT_DEFAULT = 1800000
 
   val RETRY_BACKOFF         = "retry.backoff.ms"
   val RETRY_BACKOFF_DOC     = "the duration in milliseconds to wait after an error before a retry attempt is made"
   val RETRY_BACKOFF_DEFAULT = 3000
+
+  val RETRY_EXPONENTIAL_BACKOFF         = "retry.backoff.exponential"
+  val RETRY_EXPONENTIAL_BACKOFF_DOC     = "enable exponential backoff mechanism"
+  val RETRY_EXPONENTIAL_BACKOFF_DEFAULT = false
 
   val FORMATTER         = "formatter.type"
   val FORMATTER_DOC     = "Formatter style to use"
@@ -154,6 +179,11 @@ object HttpSinkConfig {
     .define(REGEX_SEPARATOR, Type.STRING, REGEX_SEPARATOR_DEFAULT, Importance.MEDIUM, REGEX_SEPARATOR_DOC)
     .define(MAX_RETRIES, Type.INT, MAX_RETRIES_DEFAULT, Importance.MEDIUM, MAX_RETRIES_DOC)
     .define(RETRY_BACKOFF, Type.LONG, RETRY_BACKOFF_DEFAULT, Importance.MEDIUM, RETRY_BACKOFF_DOC)
+    .define(READ_TIMEOUT, Type.LONG, READ_TIMEOUT_DEFAULT, Importance.MEDIUM, READ_TIMEOUT_DOC)
+    .define(CONNECT_TIMEOUT, Type.LONG, CONNECT_TIMEOUT_DEFAULT, Importance.MEDIUM, CONNECT_TIMEOUT_DOC)
+    .define(MAX_RETRIES_TIMEOUT, Type.LONG, MAX_RETRIES_TIMEOUT_DEFAULT, Importance.LOW, MAX_RETRIES_TIMEOUT_DOC)
+    .define(MAX_BACKOFF_TIMEOUT, Type.LONG, MAX_BACKOFF_TIMEOUT_DEFAULT, Importance.LOW, MAX_BACKOFF_TIMEOUT_DOC)
+    .define(RETRY_EXPONENTIAL_BACKOFF, Type.BOOLEAN, RETRY_EXPONENTIAL_BACKOFF_DEFAULT, Importance.LOW, RETRY_EXPONENTIAL_BACKOFF_DOC)
     .define(AUTH_TYPE, Type.STRING, AUTH_TYPE_DEFAULT, Importance.HIGH, AUTH_TYPE_DOC)
     .define(AUTH_HEADER_NAME, Type.STRING, AUTH_HEADER_NAME_DEFAULT, Importance.MEDIUM, AUTH_HEADER_NAME_DOC)
     .define(OAUTH2_CLIENT_ID, Type.STRING, OAUTH2_CLIENT_ID_DEFAULT, Importance.MEDIUM, OAUTH2_CLIENT_ID_DOC)

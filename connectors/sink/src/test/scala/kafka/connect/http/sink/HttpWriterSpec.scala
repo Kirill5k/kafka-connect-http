@@ -74,13 +74,23 @@ class HttpWriterSpec extends AnyWordSpec with Matchers with MockitoSugar {
       writer.batches must be(Nil)
 
       verify(authenticator, times(3)).authHeader()
-      verify(dispatcher, times(3)).send(
+      verify(dispatcher, times(1)).send(
         Map(
           "content-type"  -> "application/json",
           "accept"        -> "application/json",
           "Authorization" -> "Basic access-token"
         ),
-        json
+        json,
+        true
+      )
+      verify(dispatcher, times(2)).send(
+        Map(
+          "content-type"  -> "application/json",
+          "accept"        -> "application/json",
+          "Authorization" -> "Basic access-token"
+        ),
+        json,
+        false
       )
     }
 

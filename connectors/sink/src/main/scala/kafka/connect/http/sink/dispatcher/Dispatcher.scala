@@ -16,40 +16,62 @@
 
 package kafka.connect.http.sink.dispatcher
 
-import kafka.connect.http.sink.errors.{HttpClientError, MaxAmountOfRetriesReached}
-import kafka.connect.http.sink.Logging
-import kafka.connect.http.sink.{HttpSinkConfig, Logging}
-import kafka.connect.http.sink.errors.MaxAmountOfRetriesReached
-import sttp.client._
-import sttp.model.Method
+import java.net.ConnectException
+import java.time.Instant
 
+import kafka.connect.http.sink.errors.{HttpClientError, MaxAmountOfRetriesReached}
+import kafka.connect.http.sink.{HttpSinkConfig, Logging}
+import sttp.client3.SttpClientException.ReadException
+import sttp.client3._
+import sttp.model.{Method, StatusCode}
+
+import scala.concurrent.duration.DurationLong
 import scala.util.{Failure, Success, Try}
 
 trait Dispatcher extends Logging {
-  def send(headers: Map[String, String], body: String): Unit
+  def send(headers: Map[String, String], body: String, failFast: Boolean = false): Unit
 }
 
-private[dispatcher] final class SttpDispatcher(
+final private[dispatcher] class SttpDispatcher(
     private val config: HttpSinkConfig,
-    private val backend: SttpBackend[Try, Nothing, NothingT],
-    private var failedAttempts: Int = 0
+    private val backend: SttpBackend[Try, Any],
+    private var failedAttempts: Int = 0,
+    private var retryUntil: Instant = Instant.MAX
 ) extends Dispatcher {
 
-  override def send(headers: Map[String, String], body: String): Unit = {
+  override def send(headers: Map[String, String], body: String, failFast: Boolean): Unit = {
     val response = sendRequest(headers, body)
     if (!response.isSuccess) {
       logger.error(s"error dispatching data. ${response.code.code}: ${response.body.fold(s => s, s => s)}")
-      retry(headers, body)
+      if (failFast) {
+        throw MaxAmountOfRetriesReached(response.statusText)
+      } else {
+        retry(response, headers, body)
+      }
+    } else {
+      // reset failed attempts
+      retryUntil = Instant.MAX
+      failedAttempts = 0
     }
   }
 
-  private def retry(headers: Map[String, String], body: String): Unit = {
+  private def retry(response: Response[Either[String, String]], headers: Map[String, String], body: String): Unit = {
     failedAttempts += 1
-    if (failedAttempts <= config.maxRetries) {
-      Thread.sleep(config.retryBackoff)
+    if (retryUntil != Instant.MAX) {
+      retryUntil = Instant.now().plusMillis(config.maxTimeout)
+    }
+    if (
+      (failedAttempts <= config.maxRetries || config.maxRetries == -1)
+      && retryUntil.isAfter(Instant.now())
+    ) {
+      if (config.retryBackoffExponential) {
+        Thread.sleep(math.min(config.maxBackoff, (config.retryBackoff * math.pow(2, (failedAttempts - 1).toDouble)).longValue))
+      } else {
+        Thread.sleep(config.retryBackoff)
+      }
       send(headers, body)
     } else {
-      throw MaxAmountOfRetriesReached
+      throw MaxAmountOfRetriesReached(response.statusText)
     }
   }
 
@@ -57,15 +79,23 @@ private[dispatcher] final class SttpDispatcher(
     backend.send(
       basicRequest
         .headers(headers)
+        .readTimeout(config.readTimeout.milliseconds)
         .body(body)
         .method(Method(config.httpRequestMethod), uri"${config.httpApiUrl}")
     ) match {
-      case Success(value)     => value
-      case Failure(exception) => throw HttpClientError(exception.getMessage)
+      case Success(value)                    => value
+      case Failure(exception: ReadException) =>
+        // Create virtual response
+        Response.apply(Left(exception.getCause.getMessage), StatusCode(-1), exception.getCause.getMessage)
+      case Failure(exception: ConnectException) =>
+        // Create virtual response
+        Response.apply(Left(exception.getCause.getMessage), StatusCode(-1), exception.getCause.getMessage)
+      case Failure(f) =>
+        throw HttpClientError(f.getMessage)
     }
 }
 
 object Dispatcher {
-  def sttp(config: HttpSinkConfig, backend: SttpBackend[Try, Nothing, NothingT]): Dispatcher =
+  def sttp(config: HttpSinkConfig, backend: SttpBackend[Try, Any]): Dispatcher =
     new SttpDispatcher(config, backend)
 }
