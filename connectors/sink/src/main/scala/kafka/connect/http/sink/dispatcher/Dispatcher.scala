@@ -65,7 +65,7 @@ final private[dispatcher] class SttpDispatcher(
       && retryUntil.isAfter(Instant.now())
     ) {
       if (config.retryBackoffExponential) {
-        Thread.sleep(math.min(config.maxBackoff, config.retryBackoff * math.pow(2, (failedAttempts - 1).toDouble).longValue))
+        Thread.sleep(math.min(config.maxBackoff, (config.retryBackoff * math.pow(2, (failedAttempts - 1).toDouble)).longValue))
       } else {
         Thread.sleep(config.retryBackoff)
       }
