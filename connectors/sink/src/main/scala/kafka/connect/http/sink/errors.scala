@@ -16,7 +16,7 @@
 
 package kafka.connect.http.sink
 
-import org.apache.kafka.connect.errors.RetriableException
+import org.apache.kafka.connect.errors.{ConnectException, RetriableException}
 
 object errors {
 
@@ -36,7 +36,7 @@ object errors {
   }
 
   final case class MaxAmountOfRetriesReached(lastMessage: String)
-      extends RetriableException(String.format(MaxAmountOfRetriesReached.message, lastMessage)) with SinkError {
+      extends ConnectException(String.format(MaxAmountOfRetriesReached.message, lastMessage)) with SinkError {
     lazy val message = String.format(MaxAmountOfRetriesReached.message, lastMessage)
   }
 
