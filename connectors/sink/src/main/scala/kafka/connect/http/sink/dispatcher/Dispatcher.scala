@@ -42,7 +42,7 @@ final private[dispatcher] class SttpDispatcher(
   override def send(headers: Map[String, String], body: String, failFast: Boolean): Unit = {
     val response = sendRequest(headers, body)
     if (!response.isSuccess) {
-      logger.error(s"error dispatching data. ${response.code.code}: ${response.body.fold(s => s, s => s)}")
+      logger.warn(s"error dispatching data. ${response.code.code}: ${response.statusText}")
       if (failFast) {
         throw MaxAmountOfRetriesReached(response.statusText)
       } else {
