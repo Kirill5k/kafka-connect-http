@@ -113,7 +113,7 @@ class HttpWriterSpec extends AnyWordSpec with Matchers with MockitoSugar {
       writer.batches must be(Nil)
 
       verify(formatter).toOutputFormat(records)
-      verify(dispatcher).send(Map("content-type" -> "application/json"), json)
+      verify(dispatcher).send(Map("content-type" -> "application/json"), json, true)
     }
   }
 
