@@ -45,11 +45,12 @@ class HttpWriter(
   }
 
   def flush(): Unit = {
-    batches.grouped(config.batchSize).foreach(sendBatch(_))
+    batches.grouped(config.batchSize).foreach(sendBatch(_, !atLeastOneSent))
+    atLeastOneSent = true
     batches = List()
   }
 
-  private def sendBatch(records: List[SinkRecord], failFast: Boolean = false): Unit = {
+  private def sendBatch(records: List[SinkRecord], failFast: Boolean): Unit = {
     val body = formatter.toOutputFormat(records)
     val headers =
       authenticator.fold(config.httpHeaders)(a => config.httpHeaders + (config.authHeaderName -> a.authHeader()))

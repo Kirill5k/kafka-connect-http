@@ -33,7 +33,7 @@ class HttpSinkTask extends SinkTask with Logging {
   }
 
   override def put(records: util.Collection[SinkRecord]): Unit = {
-    logger.info(s"received ${records.size()} records")
+    logger.trace(s"received ${records.size()} records")
     val recs = records.asScala.filter(r => r != null && r.value() != null).toList
     if (recs.nonEmpty) {
       writer.foreach(_.put(recs))
