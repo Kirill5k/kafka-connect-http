@@ -37,7 +37,7 @@ class HttpWriter(
   def put(records: List[SinkRecord]): Unit = {
     batches = batches ++ records
     // send only one batch in batches
-    if ((batches.size >= config.batchSize && batches.size > 0) && !atLeastOneSent) {
+    if (batches.size > 0 && !atLeastOneSent) {
       val (toSend, remaining) = batches.splitAt(config.batchSize)
       sendBatch(toSend, true)
       atLeastOneSent = true
