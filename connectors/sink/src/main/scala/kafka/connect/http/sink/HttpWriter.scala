@@ -43,7 +43,7 @@ class HttpWriter(
     if (batches.size > 0 && nextCheck.isBefore(Instant.now())) {
       val (toSend, remaining) = batches.splitAt(config.batchSize)
       sendBatch(toSend, true)
-      nextCheck = Instant.now().plus(config.maxBackoff, ChronoUnit.MILLIS)
+      nextCheck = Instant.now().plus(config.maxTimeout, ChronoUnit.MILLIS)
       batches = remaining
     }
   }
