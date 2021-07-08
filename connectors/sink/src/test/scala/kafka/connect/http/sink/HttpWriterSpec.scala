@@ -16,6 +16,8 @@
 
 package kafka.connect.http.sink
 
+import java.time.Instant
+
 import kafka.connect.http.sink.authenticator.Authenticator
 import kafka.connect.http.sink.dispatcher.Dispatcher
 import kafka.connect.http.sink.formatter.Formatter
@@ -46,7 +48,7 @@ class HttpWriterSpec extends AnyWordSpec with Matchers with MockitoSugar {
       val (authenticator, dispatcher, formatter) = mocks
       val writer                                 = new HttpWriter(config, dispatcher, formatter, Some(authenticator))
 
-      writer.atLeastOneSent = true
+      writer.nextCheck = Instant.MAX
       writer.put(records)
 
       writer.batches must contain theSameElementsAs records
@@ -71,6 +73,8 @@ class HttpWriterSpec extends AnyWordSpec with Matchers with MockitoSugar {
 
       writer.put(records)
 
+      writer.batches.size must be(records.size - 1)
+      writer.flush()
       writer.batches must be(Nil)
 
       verify(authenticator, times(3)).authHeader()
