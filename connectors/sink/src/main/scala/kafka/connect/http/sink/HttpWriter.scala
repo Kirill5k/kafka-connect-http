@@ -16,6 +16,9 @@
 
 package kafka.connect.http.sink
 
+import java.time.Instant
+import java.time.temporal.ChronoUnit
+
 import kafka.connect.http.sink.authenticator.Authenticator
 import kafka.connect.http.sink.dispatcher.Dispatcher
 import kafka.connect.http.sink.formatter.Formatter
@@ -32,22 +35,21 @@ class HttpWriter(
 ) extends Logging {
 
   var batches: List[SinkRecord] = List()
-  var atLeastOneSent            = false
+  var nextCheck: Instant        = Instant.MIN
 
   def put(records: List[SinkRecord]): Unit = {
     batches = batches ++ records
     // send only one batch in batches
-    if (batches.size > 0 && !atLeastOneSent) {
+    if (batches.size > 0 && nextCheck.isBefore(Instant.now())) {
       val (toSend, remaining) = batches.splitAt(config.batchSize)
       sendBatch(toSend, true)
-      atLeastOneSent = true
+      nextCheck = Instant.now().plus(3, ChronoUnit.HOURS)
       batches = remaining
     }
   }
 
   def flush(): Unit = {
-    batches.grouped(config.batchSize).foreach(sendBatch(_, !atLeastOneSent))
-    atLeastOneSent = true
+    batches.grouped(config.batchSize).foreach(sendBatch(_, nextCheck.isBefore(Instant.now())))
     batches = List()
   }
 
