@@ -87,7 +87,7 @@ final private[dispatcher] class SttpDispatcher(
         // Create virtual response
         Response.apply(Left(exception.getCause.getMessage), StatusCode(-1), exception.getCause.getMessage)
       case Failure(f) =>
-        throw HttpClientError(f.getMessage)
+        Response.apply(Left(f), StatusCode(-1), f.getMessage)
     }
 }
 
