@@ -4,28 +4,30 @@ lazy val scala212               = "2.12.10"
 lazy val scala213               = "2.13.5"
 lazy val supportedScalaVersions = List(scala212, scala213)
 
+ThisBuild / credentials += Credentials(
+  "emnify/emnify-maven",
+  "emnify-648956897802.d.codeartifact.eu-west-1.amazonaws.com",
+  "aws",
+  sys.env.getOrElse("CODEARTIFACT_AUTH_TOKEN", "Unknown")
+)
+
 ThisBuild / scalaVersion := "2.13.5"
 ThisBuild / organization := "io.github.kirill5k"
 ThisBuild / organizationName := "example"
 ThisBuild / resolvers ++= Seq(
-  "Confluent" at "https://packages.confluent.io/maven/",
   Resolver.mavenLocal,
-  Resolver.sonatypeRepo("public"),
-  Resolver.sbtPluginRepo("releases")
+  Resolver.sbtPluginRepo("releases"),
+  "Confluent" at "https://packages.confluent.io/maven/",
+  "emnify/emnify-maven" at "https://emnify-648956897802.d.codeartifact.eu-west-1.amazonaws.com/maven/emnify-maven/",
 )
+
+ThisBuild / publishTo := Some("emnify/emnify-maven" at "https://emnify-648956897802.d.codeartifact.eu-west-1.amazonaws.com/maven/emnify-maven/")
+ThisBuild / publishMavenStyle := true
 
 releaseVersionBump := sbtrelease.Version.Bump.Next
 releaseCrossBuild := false
 
-lazy val noPublish = Seq(
-  publish := {},
-  publishLocal := {},
-  publishArtifact := false,
-  publish / skip := true
-)
-
 lazy val root = (project in file("."))
-  .settings(noPublish)
   .settings(
     name := "kafka-connect-http",
     crossScalaVersions := Nil
