@@ -78,10 +78,12 @@ class HttpWriter(
     */
   private def pauseFor(e: SinkError, tp: List[TopicPartition], duration: Duration): Unit =
     e match {
-      case er: MaxAmountOfRetriesReached => throw er
-      case _ =>
+      case er: MaxAmountOfRetriesReached =>
+        logger.info(s"Error occurred for partitions = ${tp.mkString(",")}", er)
+        throw er
+      case e: SinkError =>
+        logger.info(s"Pausing partitions ${tp.mkString(",")} for ${duration} due to sink error", e)
         context.foreach(_.pause(tp: _*))
-        logger.info(s"Pausing partitions ${tp.mkString(",")} for ${duration}")
         unpause(tp, duration).onComplete(_ => logger.info(s"Partitions un-paused => ${tp.mkString(",")}"))
     }
 
