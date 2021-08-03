@@ -86,8 +86,13 @@ final private[dispatcher] class SttpDispatcher(
       case Failure(exception: ConnectException) =>
         // Create virtual response
         Response.apply(Left(exception.getCause.getMessage), StatusCode(-1), exception.getCause.getMessage)
-      case Failure(f) =>
-        Response.apply(Left(f), StatusCode(-1), f.getMessage)
+      case Failure(exception) =>
+        if (exception.getCause != null) {
+          Response.apply(Left(exception.getCause.getMessage), StatusCode(-1), exception.getCause.getMessage)
+        } else {
+          logger.error("Unknown error", exception)
+          throw exception
+        }
     }
 }
 
