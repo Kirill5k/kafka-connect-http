@@ -66,10 +66,16 @@ class HttpWriter(
     dispatcher.send(headers, body, failFast) match {
       case None =>
         records.foreach(r => updateLastCommitted(toTopicPartition(r), r.kafkaOffset()))
+      // send failed => we are not going to commit and instead of that we'll be pausing consumption
       case Some(e) => pauseFor(e, records.map(toTopicPartition), dispatcher.pauseTime)
     }
   }
 
+  /** Pauses consumption of topic partitions for a given duration
+    * @param e error to verify that maximum amount of retries hasn't been reached.
+    * @param tp list of partitions
+    * @param duration duration of pause
+    */
   private def pauseFor(e: SinkError, tp: List[TopicPartition], duration: Duration): Unit =
     e match {
       case er: MaxAmountOfRetriesReached => throw er
