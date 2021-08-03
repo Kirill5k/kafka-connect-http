@@ -16,7 +16,6 @@
 
 package kafka.connect.http.sink.dispatcher
 
-import kafka.connect.http.sink.errors.SinkError
 import kafka.connect.http.sink.HttpSinkConfig
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -67,7 +66,7 @@ class DispatcherSpec extends AnyWordSpec with Matchers {
       dispatcher.send(Map("Content-Type" -> "application/json"), "{\"foo\":\"bar\"}")
     }
 
-    "thrown an exception when number of retries is greater than max" in {
+    "return the last exception" in {
       val backend = SttpBackendStub[Try, Any](TryMonad).whenAnyRequest
         .thenRespondCyclicResponses(
           Response("error", StatusCode.InternalServerError, "Something went wrong"),
@@ -78,11 +77,10 @@ class DispatcherSpec extends AnyWordSpec with Matchers {
 
       val dispatcher = Dispatcher.sttp(config, backend)
 
-      val error = intercept[SinkError] {
-        dispatcher.send(Map("Content-Type" -> "application/json"), "{\"foo\":\"bar\"}")
-      }
+      val error = dispatcher.send(Map("Content-Type" -> "application/json"), "{\"foo\":\"bar\"}")
 
-      error.message must be("reached the maximum number of times to retry on errors before failing the task: Something went wrong")
+      error.isDefined must be(true)
+      error.get.message must be("Something went wrong")
     }
   }
 }

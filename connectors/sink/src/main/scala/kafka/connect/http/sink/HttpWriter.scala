@@ -16,54 +16,91 @@
 
 package kafka.connect.http.sink
 
-import java.time.Instant
-import java.time.temporal.ChronoUnit
+import java.util.Optional
 
 import kafka.connect.http.sink.authenticator.Authenticator
 import kafka.connect.http.sink.dispatcher.Dispatcher
+import kafka.connect.http.sink.errors.{MaxAmountOfRetriesReached, SinkError}
 import kafka.connect.http.sink.formatter.Formatter
-import org.apache.kafka.connect.sink.SinkRecord
+import org.apache.kafka.clients.consumer.OffsetAndMetadata
+import org.apache.kafka.common.TopicPartition
+import org.apache.kafka.connect.sink.{SinkRecord, SinkTaskContext}
 import sttp.client3.{SttpBackendOptions, TryHttpURLConnectionBackend}
 
-import scala.concurrent.duration.DurationLong
+import scala.collection.mutable
+import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration.{Duration, DurationLong}
 
 class HttpWriter(
     private val config: HttpSinkConfig,
     private val dispatcher: Dispatcher,
     private val formatter: Formatter,
-    private val authenticator: Option[Authenticator]
-) extends Logging {
+    private val authenticator: Option[Authenticator],
+    private val context: Option[SinkTaskContext]
+)(implicit ec: ExecutionContext)
+    extends Logging {
 
-  var batches: List[SinkRecord] = List()
-  var nextCheck: Instant        = Instant.MIN
+  var batches: List[SinkRecord]                                     = List()
+  val lastCommitted: mutable.Map[TopicPartition, OffsetAndMetadata] = mutable.Map.empty
 
   def put(records: List[SinkRecord]): Unit = {
     batches = batches ++ records
     // send only one batch in batches
-    if (batches.size > 0 && nextCheck.isBefore(Instant.now())) {
+    if (batches.size >= config.batchSize || lastCommitted.isEmpty) {
       val (toSend, remaining) = batches.splitAt(config.batchSize)
       sendBatch(toSend, true)
-      nextCheck = Instant.now().plus(config.maxTimeout, ChronoUnit.MILLIS)
       batches = remaining
     }
   }
 
-  def flush(): Unit = {
-    batches.grouped(config.batchSize).foreach(sendBatch(_, nextCheck.isBefore(Instant.now())))
+  def flush(): Map[TopicPartition, OffsetAndMetadata] = {
+    batches.grouped(config.batchSize).foreach(sendBatch(_, false))
     batches = List()
+    lastCommitted.toMap
   }
 
   private def sendBatch(records: List[SinkRecord], failFast: Boolean): Unit = {
     val body = formatter.toOutputFormat(records)
     val headers =
       authenticator.fold(config.httpHeaders)(a => config.httpHeaders + (config.authHeaderName -> a.authHeader()))
-    dispatcher.send(headers, body, failFast)
+    dispatcher.send(headers, body, failFast) match {
+      case None =>
+        records.foreach(r => updateLastCommitted(toTopicPartition(r), r.kafkaOffset()))
+      case Some(e) => pauseFor(e, records.map(toTopicPartition), dispatcher.pauseTime)
+    }
   }
+
+  private def pauseFor(e: SinkError, tp: List[TopicPartition], duration: Duration): Unit =
+    e match {
+      case er: MaxAmountOfRetriesReached => throw er
+      case _ =>
+        context.foreach(_.pause(tp: _*))
+        logger.info(s"Pausing partitions ${tp.mkString(",")} for ${duration}")
+        unpause(tp, duration).onComplete(_ => logger.info(s"Partitions un-paused => ${tp.mkString(",")}"))
+    }
+
+  private def unpause(tp: List[TopicPartition], duration: Duration) = Future {
+    Thread.sleep(duration.toMillis)
+    context.foreach(_.resume(tp: _*))
+  }
+
+  private def updateLastCommitted(tp: TopicPartition, offset: Long) = {
+    val of = lastCommitted
+      .get(tp)
+      .filter(p => p.offset() < offset)
+      .getOrElse(
+        new OffsetAndMetadata(offset, Optional.empty(), null)
+      )
+    lastCommitted.put(tp, of)
+  }
+
+  private def toTopicPartition(r: SinkRecord) = new TopicPartition(r.topic(), r.kafkaPartition())
+
 }
 
 object HttpWriter {
 
-  def make(config: HttpSinkConfig): HttpWriter = {
+  def make(context: Option[SinkTaskContext])(config: HttpSinkConfig)(implicit ec: ExecutionContext): HttpWriter = {
     val backend    = TryHttpURLConnectionBackend(options = SttpBackendOptions(connectionTimeout = config.connectTimeout.milliseconds, None))
     val dispatcher = Dispatcher.sttp(config, backend)
     val formatter = config.formatter match {
@@ -74,6 +111,6 @@ object HttpWriter {
       case "oauth2" => Some(Authenticator.oauth2(config, backend))
       case _        => None
     }
-    new HttpWriter(config, dispatcher, formatter, authenticator)
+    new HttpWriter(config, dispatcher, formatter, authenticator, context)
   }
 }

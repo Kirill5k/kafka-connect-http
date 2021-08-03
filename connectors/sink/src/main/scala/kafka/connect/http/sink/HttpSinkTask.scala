@@ -17,19 +17,22 @@
 package kafka.connect.http.sink
 
 import java.util
+import java.util.concurrent.Executors
 
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.TopicPartition
 import org.apache.kafka.connect.sink.{SinkRecord, SinkTask}
 
+import scala.concurrent.ExecutionContext
 import scala.jdk.CollectionConverters._
 
 class HttpSinkTask extends SinkTask with Logging {
   var writer: Option[HttpWriter] = None
+  implicit val ec                = ExecutionContext.fromExecutor(Executors.newCachedThreadPool())
 
   override def start(props: util.Map[String, String]): Unit = {
     logger.info(s"starting http sink connector task: $props")
-    writer = Some(HttpSinkConfig(props)).map(HttpWriter.make)
+    writer = Some(HttpSinkConfig(props)).map(HttpWriter.make(Some(context)))
   }
 
   override def put(records: util.Collection[SinkRecord]): Unit = {
@@ -46,6 +49,12 @@ class HttpSinkTask extends SinkTask with Logging {
   override def version(): String =
     getClass.getPackage.getImplementationVersion
 
-  override def flush(currentOffsets: util.Map[TopicPartition, OffsetAndMetadata]): Unit =
-    writer.foreach(_.flush())
+  // commit only if everything has been flushed correctly
+  override def preCommit(currentOffsets: util.Map[TopicPartition, OffsetAndMetadata]): util.Map[TopicPartition, OffsetAndMetadata] =
+    writer.map(w => w.flush().asJava).getOrElse(new util.HashMap[TopicPartition, OffsetAndMetadata]())
+
+  override def flush(currentOffsets: util.Map[TopicPartition, OffsetAndMetadata]): Unit = {
+    val count = preCommit(currentOffsets)
+    logger.debug(s"Flushed ${count.size()} records.")
+  }
 }
