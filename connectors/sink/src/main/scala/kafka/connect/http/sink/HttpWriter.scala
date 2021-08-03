@@ -48,26 +48,32 @@ class HttpWriter(
     // send only one batch in batches
     if (batches.size >= config.batchSize || lastCommitted.isEmpty) {
       val (toSend, remaining) = batches.splitAt(config.batchSize)
-      sendBatch(toSend, lastCommitted.isEmpty)
-      batches = remaining
+      if (sendBatch(toSend, lastCommitted.isEmpty)) {
+        batches = remaining
+      } else {
+        batches = List.empty
+      }
     }
   }
 
   def flush(): Map[TopicPartition, OffsetAndMetadata] = {
-    batches.grouped(config.batchSize).foreach(sendBatch(_, lastCommitted.isEmpty))
+    batches.grouped(config.batchSize).foldLeft(true)((prev, b) => prev && sendBatch(b, lastCommitted.isEmpty))
     batches = List()
     lastCommitted.toMap
   }
 
-  private def sendBatch(records: List[SinkRecord], failFast: Boolean): Unit = {
+  private def sendBatch(records: List[SinkRecord], failFast: Boolean): Boolean = {
     val body = formatter.toOutputFormat(records)
     val headers =
       authenticator.fold(config.httpHeaders)(a => config.httpHeaders + (config.authHeaderName -> a.authHeader()))
     dispatcher.send(headers, body, failFast) match {
       case None =>
         records.foreach(r => updateLastCommitted(toTopicPartition(r), r.kafkaOffset()))
-      // send failed => we are not going to commit and instead of that we'll be pausing consumption
-      case Some(e) => pauseFor(e, records.map(toTopicPartition), dispatcher.pauseTime)
+        // send failed => we are not going to commit and instead of that we'll be pausing consumption
+        true
+      case Some(e) =>
+        pauseFor(e, records.map(toTopicPartition), dispatcher.pauseTime)
+        false
     }
   }
 
