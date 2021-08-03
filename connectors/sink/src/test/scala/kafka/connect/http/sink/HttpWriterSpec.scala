@@ -126,7 +126,7 @@ class HttpWriterSpec extends AnyWordSpec with Matchers with MockitoSugar {
       writer.batches must be(Nil)
 
       verify(formatter).toOutputFormat(records)
-      verify(dispatcher).send(Map("content-type" -> "application/json"), json, false)
+      verify(dispatcher).send(Map("content-type" -> "application/json"), json, true)
     }
 
     "pause after error" in {
@@ -153,7 +153,7 @@ class HttpWriterSpec extends AnyWordSpec with Matchers with MockitoSugar {
       verify(dispatcher).pauseTime
       verify(ctx).pause(tp, tp, tp)
       verify(formatter).toOutputFormat(records)
-      verify(dispatcher).send(Map("content-type" -> "application/json"), json, false)
+      verify(dispatcher).send(Map("content-type" -> "application/json"), json, true)
       Thread.sleep(1000L)
       verify(ctx).resume(tp, tp, tp)
     }

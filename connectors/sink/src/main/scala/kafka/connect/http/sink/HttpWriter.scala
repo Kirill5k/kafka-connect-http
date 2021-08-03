@@ -48,13 +48,13 @@ class HttpWriter(
     // send only one batch in batches
     if (batches.size >= config.batchSize || lastCommitted.isEmpty) {
       val (toSend, remaining) = batches.splitAt(config.batchSize)
-      sendBatch(toSend, true)
+      sendBatch(toSend, lastCommitted.isEmpty)
       batches = remaining
     }
   }
 
   def flush(): Map[TopicPartition, OffsetAndMetadata] = {
-    batches.grouped(config.batchSize).foreach(sendBatch(_, false))
+    batches.grouped(config.batchSize).foreach(sendBatch(_, lastCommitted.isEmpty))
     batches = List()
     lastCommitted.toMap
   }
