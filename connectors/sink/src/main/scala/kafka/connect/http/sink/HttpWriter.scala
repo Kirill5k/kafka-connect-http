@@ -108,8 +108,14 @@ class HttpWriter(
     }
 
   private def unpause(tp: List[TopicPartition], duration: Duration) = Future {
-    Thread.sleep(duration.toMillis)
-    context.foreach(_.resume(tp: _*))
+    pausedUntil = Instant.MIN
+    try {
+      Thread.sleep(duration.toMillis)
+      logger.info(s"Resuming partitions ${tp.mkString(",")}")
+    } finally {
+      context.foreach(_.resume(tp: _*))
+      logger.info(s"Partitions resumed ${tp.mkString(",")}")
+    }
   }
 
   private def updateLastCommitted(tp: TopicPartition, offset: Long) = {
