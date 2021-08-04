@@ -21,6 +21,7 @@ import java.time.Instant
 
 import kafka.connect.http.sink.errors.{HttpClientError, MaxAmountOfRetriesReached, SinkError}
 import kafka.connect.http.sink.{HttpSinkConfig, Logging}
+import org.slf4j.MDC
 import sttp.client3.SttpClientException.ReadException
 import sttp.client3._
 import sttp.model.{Method, StatusCode}
@@ -43,7 +44,9 @@ final private[dispatcher] class SttpDispatcher(
   override def send(headers: Map[String, String], body: String, failFast: Boolean): Option[SinkError] = {
     val response = sendRequest(headers, body)
     if (!response.isSuccess) {
-      logger.info(s"error dispatching data URL: ${config.httpApiUrl}, ${response.show(includeBody = true).take(1024)}")
+      logger.info(
+        s"error dispatching data URL: ${config.httpApiUrl}, topic(s): ${MDC.get("topics")}, ${response.show(includeBody = true).take(1024)}"
+      )
       if (shouldRetry(failFast)) {
         failedAttempts += 1
         if (retryUntil == Instant.MAX) {

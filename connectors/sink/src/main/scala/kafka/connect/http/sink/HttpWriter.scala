@@ -27,6 +27,7 @@ import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.TopicPartition
 import org.apache.kafka.connect.errors.RetriableException
 import org.apache.kafka.connect.sink.{SinkRecord, SinkTaskContext}
+import org.slf4j.MDC
 import sttp.client3.{SttpBackendOptions, TryHttpURLConnectionBackend}
 
 import scala.collection.mutable
@@ -70,6 +71,7 @@ class HttpWriter(
   }
 
   private def sendBatch(records: List[SinkRecord], failFast: Boolean): Boolean = {
+    MDC.put("topics", records.map(_.topic()).mkString(","))
     val body = formatter.toOutputFormat(records)
     val headers =
       authenticator.fold(config.httpHeaders)(a => config.httpHeaders + (config.authHeaderName -> a.authHeader()))
@@ -111,10 +113,10 @@ class HttpWriter(
     pausedUntil = Instant.MIN
     try {
       Thread.sleep(duration.toMillis)
-      logger.info(s"Resuming partitions ${tp.mkString(",")}")
+      logger.debug(s"Resuming partitions ${tp.mkString(",")}")
     } finally {
       context.foreach(_.resume(tp: _*))
-      logger.info(s"Partitions resumed ${tp.mkString(",")}")
+      logger.debug(s"Partitions resumed ${tp.mkString(",")}")
     }
   }
 
