@@ -25,6 +25,7 @@ import kafka.connect.http.sink.errors.{MaxAmountOfRetriesReached, SinkError}
 import kafka.connect.http.sink.formatter.Formatter
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.TopicPartition
+import org.apache.kafka.connect.errors.RetriableException
 import org.apache.kafka.connect.sink.{SinkRecord, SinkTaskContext}
 import sttp.client3.{SttpBackendOptions, TryHttpURLConnectionBackend}
 
@@ -57,6 +58,8 @@ class HttpWriter(
           batches = List.empty
         }
       }
+    } else {
+      throw WriterPaused(s"Writer paused until ${pausedUntil}")
     }
 
   def flush(): Map[TopicPartition, OffsetAndMetadata] = {
@@ -138,3 +141,5 @@ object HttpWriter {
     new HttpWriter(config, dispatcher, formatter, authenticator, context)
   }
 }
+
+case class WriterPaused(reason: String) extends RetriableException(reason)
