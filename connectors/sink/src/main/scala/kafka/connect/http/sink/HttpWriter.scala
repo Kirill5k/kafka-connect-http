@@ -97,6 +97,7 @@ class HttpWriter(
       case e: SinkError =>
         logger.info(s"Pausing partitions ${tp.mkString(",")} for ${duration} due to sink error", e)
         pausedUntil = Instant.now().plusMillis(duration.toMillis)
+        unpause(tp, duration).onComplete(_ => logger.info(s"Partitions un-paused => ${tp.mkString(",")}"))
         context.foreach { ctx =>
           // will only poll this often
           ctx.timeout(duration.toMillis)
@@ -104,7 +105,6 @@ class HttpWriter(
           ctx.pause(tp: _*)
           logger.debug(s"Paused partitions ${tp.mkString(",")} for ${duration} due to sink error", e)
         }
-        unpause(tp, duration).onComplete(_ => logger.info(s"Partitions un-paused => ${tp.mkString(",")}"))
     }
 
   private def unpause(tp: List[TopicPartition], duration: Duration) = Future {
