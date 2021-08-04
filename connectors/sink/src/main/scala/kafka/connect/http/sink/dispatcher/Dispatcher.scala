@@ -19,17 +19,19 @@ package kafka.connect.http.sink.dispatcher
 import java.net.ConnectException
 import java.time.Instant
 
-import kafka.connect.http.sink.errors.{HttpClientError, MaxAmountOfRetriesReached}
+import kafka.connect.http.sink.errors.{HttpClientError, MaxAmountOfRetriesReached, SinkError}
 import kafka.connect.http.sink.{HttpSinkConfig, Logging}
+import org.slf4j.MDC
 import sttp.client3.SttpClientException.ReadException
 import sttp.client3._
 import sttp.model.{Method, StatusCode}
 
-import scala.concurrent.duration.DurationLong
+import scala.concurrent.duration.{Duration, DurationLong}
 import scala.util.{Failure, Success, Try}
 
 trait Dispatcher extends Logging {
-  def send(headers: Map[String, String], body: String, failFast: Boolean = false): Unit
+  def send(headers: Map[String, String], body: String, failFast: Boolean = false): Option[SinkError]
+  def pauseTime: Duration
 }
 
 final private[dispatcher] class SttpDispatcher(
@@ -39,41 +41,38 @@ final private[dispatcher] class SttpDispatcher(
     private var retryUntil: Instant = Instant.MAX
 ) extends Dispatcher {
 
-  override def send(headers: Map[String, String], body: String, failFast: Boolean): Unit = {
+  override def send(headers: Map[String, String], body: String, failFast: Boolean): Option[SinkError] = {
     val response = sendRequest(headers, body)
     if (!response.isSuccess) {
-      logger.info(s"error dispatching data URL: ${config.httpApiUrl}, ${response.show(includeBody = true).take(1024)}")
-      if (failFast) {
-        throw MaxAmountOfRetriesReached(response.statusText)
+      logger.info(
+        s"error dispatching data URL: ${config.httpApiUrl}, topic(s): ${MDC.get("topics")}, ${response.show(includeBody = true).take(1024)}"
+      )
+      if (shouldRetry(failFast)) {
+        failedAttempts += 1
+        if (retryUntil == Instant.MAX) {
+          retryUntil = Instant.now().plusMillis(config.maxTimeout)
+        }
+        Some(HttpClientError(response.statusText))
       } else {
-        retry(response, headers, body)
+        Some(MaxAmountOfRetriesReached(response.statusText))
       }
     } else {
       // reset failed attempts
       retryUntil = Instant.MAX
       failedAttempts = 0
+      Option.empty
     }
   }
 
-  private def retry(response: Response[Either[String, String]], headers: Map[String, String], body: String): Unit = {
-    failedAttempts += 1
-    if (retryUntil != Instant.MAX) {
-      retryUntil = Instant.now().plusMillis(config.maxTimeout)
-    }
-    if (
-      (failedAttempts <= config.maxRetries || config.maxRetries == -1)
-      && retryUntil.isAfter(Instant.now())
-    ) {
-      if (config.retryBackoffExponential) {
-        Thread.sleep(math.min(config.maxBackoff, (config.retryBackoff * math.pow(2, (failedAttempts - 1).toDouble)).longValue))
-      } else {
-        Thread.sleep(config.retryBackoff)
-      }
-      send(headers, body)
+  override def pauseTime: Duration =
+    if (config.retryBackoffExponential) {
+      math.min(config.maxBackoff, (config.retryBackoff * math.pow(2, (failedAttempts - 1).toDouble)).longValue).millisecond
     } else {
-      throw MaxAmountOfRetriesReached(response.statusText)
+      config.retryBackoff.millisecond
     }
-  }
+
+  private def shouldRetry(failFast: Boolean): Boolean =
+    !failFast && (failedAttempts <= config.maxRetries || config.maxRetries == -1) && retryUntil.isAfter(Instant.now())
 
   private def sendRequest(headers: Map[String, String], body: String): Response[Either[String, String]] =
     backend.send(
@@ -90,8 +89,13 @@ final private[dispatcher] class SttpDispatcher(
       case Failure(exception: ConnectException) =>
         // Create virtual response
         Response.apply(Left(exception.getCause.getMessage), StatusCode(-1), exception.getCause.getMessage)
-      case Failure(f) =>
-        throw HttpClientError(f.getMessage)
+      case Failure(exception) =>
+        if (exception.getCause != null) {
+          Response.apply(Left(exception.getCause.getMessage), StatusCode(-1), exception.getCause.getMessage)
+        } else {
+          logger.error("Unknown error", exception)
+          throw exception
+        }
     }
 }
 
