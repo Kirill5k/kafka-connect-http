@@ -146,7 +146,7 @@ class HttpWriterSpec extends AnyWordSpec with Matchers with MockitoSugar {
       val writer = new HttpWriter(config, dispatcher, formatter, None, Some(ctx))
 
       writer.batches = records
-      writer.flush() must be(Map.empty)
+      writer.flush()
 
       writer.batches must be(Nil)
 

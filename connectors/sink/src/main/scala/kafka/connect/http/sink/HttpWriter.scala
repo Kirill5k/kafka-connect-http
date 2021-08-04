@@ -56,6 +56,7 @@ class HttpWriter(
           batches = remaining
         } else {
           batches = List.empty
+          throw WriterPaused(s"Connector paused due to error")
         }
       }
     } else {
@@ -104,7 +105,6 @@ class HttpWriter(
           logger.debug(s"Paused partitions ${tp.mkString(",")} for ${duration} due to sink error", e)
         }
         unpause(tp, duration).onComplete(_ => logger.info(s"Partitions un-paused => ${tp.mkString(",")}"))
-        throw WriterPaused(s"Connector paused due to error: ${e.message}")
     }
 
   private def unpause(tp: List[TopicPartition], duration: Duration) = Future {
