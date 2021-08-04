@@ -16,6 +16,7 @@
 
 package kafka.connect.http.sink
 
+import java.time.Instant
 import java.util.Optional
 
 import kafka.connect.http.sink.authenticator.Authenticator
@@ -42,19 +43,21 @@ class HttpWriter(
 
   var batches: List[SinkRecord]                                     = List()
   val lastCommitted: mutable.Map[TopicPartition, OffsetAndMetadata] = mutable.Map.empty
+  var pausedUntil                                                   = Instant.MIN
 
-  def put(records: List[SinkRecord]): Unit = {
-    batches = batches ++ records
-    // send only one batch in batches
-    if (batches.size >= config.batchSize || lastCommitted.isEmpty) {
-      val (toSend, remaining) = batches.splitAt(config.batchSize)
-      if (sendBatch(toSend, lastCommitted.isEmpty)) {
-        batches = remaining
-      } else {
-        batches = List.empty
+  def put(records: List[SinkRecord]): Unit =
+    if (pausedUntil.isBefore(Instant.now())) {
+      batches = batches ++ records
+      // send only one batch in batches
+      if (batches.size >= config.batchSize || lastCommitted.isEmpty) {
+        val (toSend, remaining) = batches.splitAt(config.batchSize)
+        if (sendBatch(toSend, lastCommitted.isEmpty)) {
+          batches = remaining
+        } else {
+          batches = List.empty
+        }
       }
     }
-  }
 
   def flush(): Map[TopicPartition, OffsetAndMetadata] = {
     batches.grouped(config.batchSize).foldLeft(true)((prev, b) => prev && sendBatch(b, lastCommitted.isEmpty))
@@ -71,8 +74,8 @@ class HttpWriter(
         records.foreach(r => updateLastCommitted(toTopicPartition(r), r.kafkaOffset()))
         // send failed => we are not going to commit and instead of that we'll be pausing consumption
         true
-      case Some(e) =>
-        pauseFor(e, records.map(toTopicPartition), dispatcher.pauseTime)
+      case Some(err) =>
+        pauseFor(err, records.map(toTopicPartition), dispatcher.pauseTime)
         false
     }
   }
@@ -85,11 +88,18 @@ class HttpWriter(
   private def pauseFor(e: SinkError, tp: List[TopicPartition], duration: Duration): Unit =
     e match {
       case er: MaxAmountOfRetriesReached =>
-        logger.info(s"Error occurred for partitions = ${tp.mkString(",")}", er)
+        logger.info(s"Error occurred for partitions ${tp.mkString(",")}", er)
         throw er
       case e: SinkError =>
         logger.info(s"Pausing partitions ${tp.mkString(",")} for ${duration} due to sink error", e)
-        context.foreach(_.pause(tp: _*))
+        pausedUntil = Instant.now().plusMillis(duration.toMillis)
+        context.foreach { ctx =>
+          // will only poll this often
+          ctx.timeout(duration.toMillis)
+          // consumption should be paused until we unpause
+          ctx.pause(tp: _*)
+          logger.debug(s"Paused partitions ${tp.mkString(",")} for ${duration} due to sink error", e)
+        }
         unpause(tp, duration).onComplete(_ => logger.info(s"Partitions un-paused => ${tp.mkString(",")}"))
     }
 
