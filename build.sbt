@@ -4,13 +4,6 @@ lazy val scala212               = "2.12.10"
 lazy val scala213               = "2.13.5"
 lazy val supportedScalaVersions = List(scala212, scala213)
 
-ThisBuild / credentials += Credentials(
-  "emnify/emnify-maven",
-  "emnify-648956897802.d.codeartifact.eu-west-1.amazonaws.com",
-  "aws",
-  sys.env.getOrElse("CODEARTIFACT_AUTH_TOKEN", "Unknown")
-)
-
 ThisBuild / scalaVersion := "2.13.5"
 ThisBuild / organization := "io.github.kirill5k"
 ThisBuild / organizationName := "example"
