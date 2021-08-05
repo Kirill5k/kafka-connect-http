@@ -18,11 +18,7 @@ ThisBuild / resolvers ++= Seq(
   Resolver.mavenLocal,
   Resolver.sbtPluginRepo("releases"),
   "Confluent" at "https://packages.confluent.io/maven/",
-  "emnify/emnify-maven" at "https://emnify-648956897802.d.codeartifact.eu-west-1.amazonaws.com/maven/emnify-maven/",
 )
-
-ThisBuild / publishTo := Some("emnify/emnify-maven" at "https://emnify-648956897802.d.codeartifact.eu-west-1.amazonaws.com/maven/emnify-maven/")
-ThisBuild / publishMavenStyle := true
 
 releaseVersionBump := sbtrelease.Version.Bump.Next
 releaseCrossBuild := false
