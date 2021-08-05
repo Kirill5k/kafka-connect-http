@@ -24,6 +24,7 @@ releaseVersionBump := sbtrelease.Version.Bump.Next
 releaseCrossBuild := false
 
 lazy val root = (project in file("."))
+  .settings(noPublish)
   .settings(
     name := "kafka-connect-http",
     crossScalaVersions := Nil
@@ -62,3 +63,10 @@ lazy val sink = (project in file("connectors/sink"))
     addArtifact(artifact in (Compile, assembly), assembly)
   )
   .enablePlugins(AutomateHeaderPlugin)
+
+lazy val noPublish = Seq(
+  publish := {},
+  publishLocal := {},
+  publishArtifact := false,
+  publish / skip := true
+)
