@@ -17,10 +17,14 @@
 package kafka.connect.http.sink.formatter
 
 import kafka.connect.http.sink.HttpSinkConfig
+import org.apache.kafka.connect.data.{Schema, Struct}
 import org.apache.kafka.connect.sink.SinkRecord
+import java.lang.{String => JavaString}
+
+import scala.util.{Try}
 
 trait Formatter {
-  def toJson(records: Seq[SinkRecord]): String
+  def toOutputFormat(records: Seq[SinkRecord]): String
 }
 
 final class RegexFormatter(
@@ -35,14 +39,40 @@ final class RegexFormatter(
       res.replaceAll(regex, replacement)
     }
 
-  override def toJson(records: Seq[SinkRecord]): String =
+  override def toOutputFormat(records: Seq[SinkRecord]): String =
     records
       .map(formatRecord)
       .mkString(config.batchPrefix, config.batchSeparator, config.batchSuffix)
+}
+
+final class SchemaBasedFormatter(private val config: HttpSinkConfig) extends Formatter {
+
+  override def toOutputFormat(records: Seq[SinkRecord]): String =
+    records
+      .filter(_.value() != null)
+      .map(formatRecord)
+      .mkString(config.batchPrefix, config.batchSeparator, config.batchSuffix)
+
+  private val formatRecord: SinkRecord => String = rec =>
+    rec.valueSchema().`type`() match {
+      case Schema.Type.STRUCT => formatStruct(rec.value().asInstanceOf[Struct])
+      // assuming that bytes are actually convertible to string
+      case Schema.Type.BYTES =>
+        Try(new JavaString(rec.value().asInstanceOf[Array[Byte]])).getOrElse(JavaString.valueOf(rec.value))
+      case Schema.Type.STRING => rec.value().asInstanceOf[JavaString]
+      case _                  => JavaString.valueOf(rec.value())
+    }
+
+  // TODO: improve
+  private def formatStruct(value: Struct): String = JavaString.valueOf(value)
+
 }
 
 object Formatter {
 
   def regexBased(config: HttpSinkConfig): Formatter =
     new RegexFormatter(config)
+
+  def schemaBased(config: HttpSinkConfig): Formatter =
+    new SchemaBasedFormatter(config)
 }

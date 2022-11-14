@@ -8,21 +8,13 @@ ThisBuild / scalaVersion := "2.13.5"
 ThisBuild / organization := "io.github.kirill5k"
 ThisBuild / organizationName := "example"
 ThisBuild / resolvers ++= Seq(
-  "Confluent" at "https://packages.confluent.io/maven/",
   Resolver.mavenLocal,
-  Resolver.sonatypeRepo("public"),
-  Resolver.sbtPluginRepo("releases")
+  Resolver.sbtPluginRepo("releases"),
+  "Confluent" at "https://packages.confluent.io/maven/",
 )
 
 releaseVersionBump := sbtrelease.Version.Bump.Next
 releaseCrossBuild := false
-
-lazy val noPublish = Seq(
-  publish := {},
-  publishLocal := {},
-  publishArtifact := false,
-  publish / skip := true
-)
 
 lazy val root = (project in file("."))
   .settings(noPublish)
@@ -64,3 +56,10 @@ lazy val sink = (project in file("connectors/sink"))
     addArtifact(artifact in (Compile, assembly), assembly)
   )
   .enablePlugins(AutomateHeaderPlugin)
+
+lazy val noPublish = Seq(
+  publish := {},
+  publishLocal := {},
+  publishArtifact := false,
+  publish / skip := true
+)

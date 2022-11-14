@@ -16,12 +16,12 @@ object Dependencies {
 
   object Libraries {
 
-    lazy val scalaCompat = "org.scala-lang.modules"        %% "scala-collection-compat"      % Versions.scalaCompat
-    lazy val connectApi  = "org.apache.kafka"               % "connect-api"                  % Versions.kafka
-    lazy val connectAvro = "io.confluent"                   % "kafka-connect-avro-converter" % Versions.confluent
-    lazy val connectJson = "org.apache.kafka"               % "connect-json"                 % Versions.kafka
-    lazy val sttpCore    = "com.softwaremill.sttp.client3" %% "core"                         % Versions.sttp
-    lazy val sttpCirce   = "com.softwaremill.sttp.client3" %% "circe"                        % Versions.sttp
+    lazy val scalaCompat       = "org.scala-lang.modules"        %% "scala-collection-compat"      % Versions.scalaCompat
+    lazy val connectApi        = "org.apache.kafka"               % "connect-api"                  % Versions.kafka
+    lazy val connectAvro       = "io.confluent"                   % "kafka-connect-avro-converter" % Versions.confluent
+    lazy val connectJson       = "org.apache.kafka"               % "connect-json"                 % Versions.kafka
+    lazy val sttpCore          = "com.softwaremill.sttp.client3" %% "core"                         % Versions.sttp
+    lazy val sttpFutureBackend = "com.softwaremill.sttp.client3" %% "circe"                        % Versions.sttp
 
     lazy val circeCore    = "io.circe" %% "circe-core"    % Versions.circe
     lazy val circeParser  = "io.circe" %% "circe-parser"  % Versions.circe
@@ -42,7 +42,7 @@ object Dependencies {
     Libraries.circeGeneric,
     Libraries.circeParser,
     Libraries.sttpCore,
-    Libraries.sttpCirce
+    Libraries.sttpFutureBackend
   )
 
   lazy val test = Seq(

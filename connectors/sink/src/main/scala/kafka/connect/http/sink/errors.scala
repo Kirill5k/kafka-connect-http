@@ -16,6 +16,8 @@
 
 package kafka.connect.http.sink
 
+import org.apache.kafka.connect.errors.{ConnectException, RetriableException}
+
 object errors {
 
   sealed trait SinkError extends Throwable {
@@ -23,7 +25,9 @@ object errors {
     override def getMessage: String = message
   }
 
-  final case class HttpClientError(message: String) extends SinkError
+  final case class HttpClientError(message: String) extends RetriableException(message) with SinkError
+
+  final case class NetworkError(message: String) extends RetriableException(message) with SinkError
 
   final case class AuthError(message: String) extends SinkError
 
@@ -31,7 +35,12 @@ object errors {
     val message = s"error parsing json from a response: ${json}"
   }
 
-  final case object MaxAmountOfRetriesReached extends SinkError {
-    val message: String = "reached the maximum number of times to retry on errors before failing the task"
+  final case class MaxAmountOfRetriesReached(lastMessage: String)
+      extends ConnectException(String.format(MaxAmountOfRetriesReached.message, lastMessage)) with SinkError {
+    lazy val message = String.format(MaxAmountOfRetriesReached.message, lastMessage)
+  }
+
+  final case object MaxAmountOfRetriesReached {
+    val message: String = "reached the maximum number of times to retry on errors before failing the task: %s"
   }
 }

@@ -65,6 +65,7 @@ class HttpSinkTaskTestSpec extends AnyWordSpec with Matchers with MockitoSugar {
       val task       = new HttpSinkTask()
       task.writer = Some(writerMock)
 
+      when(writerMock.flush()).thenReturn(Map.empty[TopicPartition, OffsetAndMetadata])
       task.flush(Map[TopicPartition, OffsetAndMetadata]().asJava)
 
       verify(writerMock).flush()
