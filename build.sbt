@@ -1,12 +1,12 @@
 import sbt.Keys.crossScalaVersions
 
-lazy val scala212               = "2.12.10"
-lazy val scala213               = "2.13.5"
-lazy val supportedScalaVersions = List(scala212, scala213)
+val scala212               = "2.12.17"
+val scala213               = "2.13.10"
+val supportedScalaVersions = List(scala212, scala213)
 
 ThisBuild / scalaVersion := "2.13.5"
 ThisBuild / organization := "io.github.kirill5k"
-ThisBuild / organizationName := "example"
+ThisBuild / organizationName := "kirill5k"
 ThisBuild / resolvers ++= Seq(
   Resolver.mavenLocal,
   Resolver.sbtPluginRepo("releases"),
@@ -16,15 +16,14 @@ ThisBuild / resolvers ++= Seq(
 releaseVersionBump := sbtrelease.Version.Bump.Next
 releaseCrossBuild := false
 
-lazy val root = (project in file("."))
-  .settings(noPublish)
-  .settings(
-    name := "kafka-connect-http",
-    crossScalaVersions := Nil
-  )
-  .aggregate(sink)
+val noPublish = Seq(
+  publish := {},
+  publishLocal := {},
+  publishArtifact := false,
+  publish / skip := true
+)
 
-lazy val commonSettings = Seq(
+val commonSettings = Seq(
   organizationName := "Kafka Connect Http",
   startYear := Some(2020),
   licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt")),
@@ -33,7 +32,7 @@ lazy val commonSettings = Seq(
   crossScalaVersions := supportedScalaVersions
 )
 
-lazy val sink = (project in file("connectors/sink"))
+val sink = project.in(file("connectors/sink"))
   .settings(commonSettings)
   .enablePlugins(BuildInfoPlugin)
   .settings(
@@ -49,17 +48,18 @@ lazy val sink = (project in file("connectors/sink"))
       case PathList("META-INF", xs @ _*) => MergeStrategy.discard
       case x                             => MergeStrategy.first
     },
-    artifact in (Compile, assembly) := {
-      val art = (artifact in (Compile, assembly)).value
+    Compile / assembly / artifact := {
+      val art = (Compile / assembly / artifact).value
       art.withClassifier(Some("assembly"))
     },
-    addArtifact(artifact in (Compile, assembly), assembly)
+    addArtifact(Compile / assembly / artifact, assembly)
   )
   .enablePlugins(AutomateHeaderPlugin)
 
-lazy val noPublish = Seq(
-  publish := {},
-  publishLocal := {},
-  publishArtifact := false,
-  publish / skip := true
-)
+val root = project.in(file("."))
+  .settings(noPublish)
+  .settings(
+    name := "kafka-connect-http",
+    crossScalaVersions := Nil
+  )
+  .aggregate(sink)
